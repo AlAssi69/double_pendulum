@@ -1,45 +1,91 @@
-# Double Pendulum Sim
+# 🎯 Double Pendulum Sim
 
-MATLAB simulation of a double pendulum with **full nonlinear dynamics** (Euler–Lagrange), **shoulder-only torque control**, and an **RL-friendly** interface.
+A **MATLAB** simulation of a double pendulum with full nonlinear dynamics, optional LQR control, and an RL-ready environment. Perfect for chaos exploration, control design, or reinforcement learning.
 
-## Quick start
+---
 
-1. Open the project folder in MATLAB and run:
+## 🚀 Quick Start
+
+1. **Open** the project folder in MATLAB.
+2. **Run** the main script:
    ```matlab
    main
    ```
-2. Adjust parameters in the config window (optional) and click **Start**.
-3. Watch the animation, state plots, and Poincaré map.
+3. **Configure** (optional): use the config window to set masses, lengths, initial angles, time span, and whether to use LQR control.
+4. **Click Start** and watch:
+   - 🎬 Real-time pendulum animation  
+   - 📈 State plots (angles, velocities, control)  
+   - 🗺️ Poincaré map (phase space)
 
-## Packages
+---
 
-| Package   | Contents |
-|----------|----------|
-| **+Core**   | `DoublePendulumModel` (physics, `getDerivatives`, `linearizePoint`), `Simulator` (step/run with RK4). |
-| **+Control**| `IController`, `NullController`, `LQRController`. |
-| **+Env**    | `DoublePendulumEnv` – reset/step API for reinforcement learning. |
-| **+Vis**    | `VisualizerManager`, `PendulumAnimator`, `StatePlotter`, `PoincareMap`. |
-| **+UI**     | `ConfigWindow` – config GUI. |
-| **+Utils**  | `ConfigLoader`, `normalizeAngle`. |
+## 📁 Project Structure
 
-## Physics
+```
+Double Pendulum/
+├── main.m                 # Entry point: GUI → simulation → visualization
+├── +Core/                 # Physics & simulation engine
+│   ├── DoublePendulumModel.m   # EOM, linearization
+│   └── Simulator.m             # RK4 stepping, observer pattern
+├── +Control/              # Controllers
+│   ├── IController.m           # Abstract interface
+│   ├── NullController.m        # No control (free swing)
+│   ├── LQRController.m         # LQR around upright
+│   └── RLPolicyController.m    # Wrapper for RL agent actions
+├── +Env/                  # RL environment
+│   └── DoublePendulumEnv.m     # reset/step API, reward, bounds
+├── +Vis/                  # Visualization
+│   ├── VisualizerManager.m     # Coordinates all visualizers
+│   ├── PendulumAnimator.m      # 2D animation
+│   ├── StatePlotter.m          # Time-series plots
+│   └── PoincareMap.m           # Phase-space plot
+├── +UI/                   # User interface
+│   └── ConfigWindow.m          # Config GUI (uifigure)
+└── +Utils/                # Helpers
+    ├── ConfigLoader.m          # Default config
+    ├── normalizeAngle.m       # Angle normalization
+    └── rk4Step.m               # RK4 integration step
+```
 
-- **State:** \(x = [\theta_1,\, \theta_2,\, \dot{\theta}_1,\, \dot{\theta}_2]^T\) (rad, rad/s).
-- **Control:** Single scalar \(u\) = torque at the shoulder (first joint); second joint is unactuated.
-- **Dynamics:** Full nonlinear EOM from Lagrangian; optional viscous damping at each joint. No small-angle approximation.
+| Folder | Role |
+|--------|------|
+| **+Core** | Physics model (Euler–Lagrange), RK4 simulator. |
+| **+Control** | Null, LQR, or RL policy; all implement `computeControl(t, state)`. |
+| **+Env** | RL interface: `reset()`, `step(action)`, reward and clipping. |
+| **+Vis** | Animation, state plots, Poincaré map; attached to simulator. |
+| **+UI** | Config window for parameters and initial conditions. |
+| **+Utils** | Config loading, angle utils, RK4 step. |
 
-## RL interface (`+Env`)
+---
 
-Use `Env.DoublePendulumEnv` for training or evaluation:
+## ⚙️ What You Can Do
 
-- **Observation/state:** 4D vector \(x\) (same as above). Use `getObservation()` if you add cos/sin later.
-- **Action:** Scalar torque, clipped to `[-MaxTorque, MaxTorque]` (default 10 N·m).
-- **Step:** `[next_state, reward, done, info] = env.step(action)` – one fixed step (default 0.02 s) with RK4.
+- **Free swing** (no control): see chaotic motion and Poincaré maps.  
+- **LQR control**: stabilize around the upright equilibrium (toggle in config).  
+- **RL training**: use `Env.DoublePendulumEnv` with `reset`/`step` and plug into the MATLAB RL Toolbox or your own agent.
+
+---
+
+## 🔬 Physics Summary
+
+- **State:** \(x = [\theta_1,\, \theta_2,\, \dot{\theta}_1,\, \dot{\theta}_2]^T\) (rad, rad/s).  
+- **Control:** Single torque \(u\) at the shoulder; second joint is unactuated.  
+- **Dynamics:** Full nonlinear equations from the Lagrangian; optional damping. No small-angle approximation.
+
+---
+
+## 🤖 Using the RL Environment
+
+`Env.DoublePendulumEnv` provides a standard `reset` / `step` API:
+
+- **Observation:** 4D state vector \(x\).  
+- **Action:** Scalar torque, clipped to `[-MaxTorque, MaxTorque]` (default 10 N·m).  
+- **Step:** `[next_state, reward, done, info] = env.step(action)` (fixed step, default 0.02 s).  
 - **Reset:** `[state, info] = env.reset()` or `env.reset(initial_state)`.
 
-**Reward** (default): \(r = -(x - x_{\text{goal}})^T Q (x - x_{\text{goal}}) - R\,u^2\). Goal is upright: `[0; 0; 0; 0]`. Tune via env properties `Q`, `R`, `GoalState`, `MaxTorque`, `MaxSteps`.
+**Default reward:** \(r = -(x - x_{\text{goal}})^T Q (x - x_{\text{goal}}) - R\,u^2\) with goal upright `[0; 0; 0; 0]`. Tune via `Q`, `R`, `GoalState`, `MaxTorque`, `MaxSteps`.
 
-**Example loop (no GUI):**
+**Minimal loop (no GUI):**
 
 ```matlab
 model = Core.DoublePendulumModel(struct('m1',1,'m2',1,'L1',1,'L2',1,'g',9.81));
@@ -52,10 +98,17 @@ for k = 1:500
 end
 ```
 
-## Using the MATLAB Reinforcement Learning Toolbox
+You can wrap this env in the MATLAB Reinforcement Learning Toolbox (e.g. `rlFunctionEnv` or a custom `rl.env.MATLABEnvironment` subclass).
 
-You can wrap `DoublePendulumEnv` in a custom environment that implements the Toolbox interface (e.g. `rlFunctionEnv` or a custom `rl.env.MATLABEnvironment` subclass) so that `step` and `reset` call the env and map state/action/reward accordingly. The same dynamics and reward are used as above.
+---
 
-## Requirements
+## 📋 Requirements
 
-- MATLAB R2023b+ (or R2020b+ for UI components; R2023b+ recommended per docs).
+- **MATLAB** R2023b+ (R2020b+ for UI; R2023b+ recommended).  
+- No extra toolboxes required for basic simulation; RL Toolbox only if you use it for training.
+
+---
+
+## 📄 License
+
+See [LICENSE](LICENSE). For more design and math details, see [Docs.md](Docs.md).
