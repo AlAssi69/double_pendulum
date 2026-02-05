@@ -1,0 +1,84 @@
+classdef PoincareMap < handle
+    % PoincareMap  Phase-space scatter; configurable X/Y variables (theta1, theta2, omega1, omega2).
+
+    properties
+        XVar (1,1) string = "theta1"
+        YVar (1,1) string = "theta2"
+    end
+
+    properties (Access = private)
+        Fig
+        Ax
+        Scatter
+        StateHistory = []   % Nx4
+        DropdownX
+        DropdownY
+    end
+
+    methods
+        function obj = PoincareMap(varargin)
+            for i = 1:2:numel(varargin)-1
+                if strcmpi(varargin{i}, 'XVar'), obj.XVar = string(varargin{i+1}); end
+                if strcmpi(varargin{i}, 'YVar'), obj.YVar = string(varargin{i+1}); end
+            end
+            vars = ["theta1", "theta2", "omega1", "omega2"];
+            obj.Fig = figure('Color', [0.12 0.12 0.15], 'Name', 'Poincaré Map');
+            obj.Ax = axes(obj.Fig, 'Position', [0.12 0.2 0.75 0.7], 'Color', [0.12 0.12 0.15], 'XColor', [0.7 0.7 0.8], 'YColor', [0.7 0.7 0.8]);
+            obj.Scatter = scatter(obj.Ax, NaN, NaN, 4, [1 0.5 1], 'filled');
+            xlabel(obj.Ax, obj.XVar);
+            ylabel(obj.Ax, obj.YVar);
+            uicontrol(obj.Fig, 'Style', 'text', 'String', 'X:', 'Units', 'normalized', 'Position', [0.02 0.05 0.04 0.04]);
+            obj.DropdownX = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', 1, 'Units', 'normalized', 'Position', [0.07 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(1));
+            uicontrol(obj.Fig, 'Style', 'text', 'String', 'Y:', 'Units', 'normalized', 'Position', [0.22 0.05 0.04 0.04]);
+            obj.DropdownY = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', 2, 'Units', 'normalized', 'Position', [0.27 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(2));
+        end
+
+        function update(obj, sim)
+            state = sim.CurrentState(:)';
+            obj.StateHistory = [obj.StateHistory; state];
+            [xd, yd] = obj.xyFromHistory();
+            set(obj.Scatter, 'XData', xd, 'YData', yd);
+            drawnow limitrate;
+        end
+
+        function [xd, yd] = xyFromHistory(obj)
+            if isempty(obj.StateHistory)
+                xd = NaN; yd = NaN;
+                return
+            end
+            xd = obj.getVarVec(obj.StateHistory, obj.XVar);
+            yd = obj.getVarVec(obj.StateHistory, obj.YVar);
+        end
+
+        function v = getVarVec(obj, states, name)
+            idx = obj.varIndex(name);
+            v = states(:, idx);
+        end
+
+        function v = getVar(~, state, name)
+            idx = obj.varIndex(name);
+            v = state(idx);
+        end
+
+        function idx = varIndex(~, name)
+            switch name
+                case "theta1", idx = 1; case "theta2", idx = 2;
+                case "omega1", idx = 3; case "omega2", idx = 4;
+                otherwise,     idx = 1;
+            end
+        end
+
+        function syncAxis(obj, which)
+            vars = ["theta1", "theta2", "omega1", "omega2"];
+            if which == 1
+                obj.XVar = vars(get(obj.DropdownX, 'Value'));
+            else
+                obj.YVar = vars(get(obj.DropdownY, 'Value'));
+            end
+            [xd, yd] = obj.xyFromHistory();
+            set(obj.Scatter, 'XData', xd, 'YData', yd);
+            xlabel(obj.Ax, obj.XVar);
+            ylabel(obj.Ax, obj.YVar);
+        end
+    end
+end
