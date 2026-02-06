@@ -1,25 +1,32 @@
 classdef Simulator < handle
     % Simulator  Orchestrates simulation: holds model, controller, state, time.
-    % step(dt, u) advances one fixed step (RK4). run(timeSpan) runs with controller and notifies observers.
+    % step(dt, u) advances one fixed step using the configured Integration solver.
+    % SolverType: "euler" | "rk4" | "ode45" (see Integration.SolverFactory).
 
     properties
         Model       (1,1) Core.DoublePendulumModel
         Controller  (1,1) Control.IController = Control.NullController()
         CurrentState (4,1) double = [0; 0; 0; 0]
         Time        (1,1) double = 0
-        SolverType  (1,1) string = "rk4"   % "rk4" or "ode45"
-        StepSize    (1,1) double = 0.02    % used for run() fixed-step and for RK4
+        SolverType  (1,1) string = "rk4"   % "euler" | "rk4" | "ode45"
+        StepSize    (1,1) double = 0.02    % fixed step for run() and fixed-step solvers
         StepCount   (1,1) double = 0       % total steps in last run (for debugging)
     end
 
     properties (Access = private)
         Observers   = {}   % cell of listeners / callback handles
+        Solver_     (1,1) Integration.ISolver  % integration engine (created from SolverType)
     end
 
     methods
         function obj = Simulator(model, controller)
             obj.Model = model;
             obj.Controller = controller;
+            obj.Solver_ = Integration.SolverFactory.getSolver(obj.SolverType);
+        end
+
+        function set.SolverType(obj, name)
+            obj.Solver_ = Integration.SolverFactory.getSolver(name);
         end
 
         function attachObserver(obj, observer)
@@ -28,13 +35,8 @@ classdef Simulator < handle
         end
 
         function step(obj, dt, u)
-            % step(obj, dt, u)  Advance by dt with constant torque u using RK4.
-            x = obj.CurrentState;
-            k1 = obj.Model.getDerivatives(x, u);
-            k2 = obj.Model.getDerivatives(x + 0.5*dt*k1, u);
-            k3 = obj.Model.getDerivatives(x + 0.5*dt*k2, u);
-            k4 = obj.Model.getDerivatives(x + dt*k3, u);
-            obj.CurrentState = x + (dt/6)*(k1 + 2*k2 + 2*k3 + k4);
+            % step(obj, dt, u)  Advance by dt with constant torque u using current solver.
+            obj.CurrentState = obj.Solver_.step(obj.Model, obj.CurrentState, u, dt);
             obj.Time = obj.Time + dt;
         end
 

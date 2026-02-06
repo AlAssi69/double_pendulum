@@ -26,7 +26,13 @@ Double Pendulum/
 ├── main.m                 # Entry point: GUI → simulation → visualization
 ├── +Core/                 # Physics & simulation engine
 │   ├── DoublePendulumModel.m   # EOM, linearization
-│   └── Simulator.m             # RK4 stepping, observer pattern
+│   └── Simulator.m             # Stepping, observer pattern (solver from +Integration)
+├── +Integration/          # ODE solvers (pluggable)
+│   ├── ISolver.m                # Abstract interface
+│   ├── EulerSolver.m            # Explicit Euler
+│   ├── RK4Solver.m              # Runge–Kutta 4
+│   ├── ODE45Solver.m            # MATLAB ode45
+│   └── SolverFactory.m          # getSolver("euler"|"rk4"|"ode45")
 ├── +Control/              # Controllers
 │   ├── IController.m           # Abstract interface
 │   ├── NullController.m        # No control (free swing)
@@ -43,18 +49,18 @@ Double Pendulum/
 │   └── ConfigWindow.m          # Config GUI (uifigure)
 └── +Utils/                # Helpers
     ├── ConfigLoader.m          # Default config
-    ├── normalizeAngle.m       # Angle normalization
-    └── rk4Step.m               # RK4 integration step
+    └── normalizeAngle.m       # Angle normalization
 ```
 
 | Folder | Role |
 |--------|------|
-| **+Core** | Physics model (Euler–Lagrange), RK4 simulator. |
+| **+Core** | Physics model (Euler–Lagrange), simulator (solver from +Integration). |
+| **+Integration** | Pluggable ODE solvers: Euler, RK4, ode45; switch via `SolverType`. |
 | **+Control** | Null, LQR, or RL policy; all implement `computeControl(t, state)`. |
 | **+Env** | RL interface: `reset()`, `step(action)`, reward and clipping. |
 | **+Vis** | Animation, state plots, Poincaré map; attached to simulator. |
 | **+UI** | Config window for parameters and initial conditions. |
-| **+Utils** | Config loading, angle utils, RK4 step. |
+| **+Utils** | Config loading, angle utils. |
 
 ---
 

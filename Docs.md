@@ -16,11 +16,12 @@ The project is organized into MATLAB packages (`+folder`) to enforce namespace s
 
 | Package | Responsibility |
 | --- | --- |
-| **`+Core`** | Handles the physics, equations of motion (EOM), and numerical integration logic. |
+| **`+Core`** | Handles the physics and equations of motion (EOM); simulation uses the Integration package for stepping. |
+| **`+Integration`** | ODE solver abstraction: `ISolver`, Euler, RK4, ode45; switch via `SolverType` ("euler" \| "rk4" \| "ode45"). |
 | **`+Control`** | Contains abstract controller interfaces and concrete implementations (e.g., LQR). |
 | **`+Vis`** | Manages all visualization strategies (Animation, Plots, Phase Plane). |
 | **`+UI`** | Manages the Configuration GUI and user interaction events. |
-| **`+Utils`** | Helper functions (conversion tools, ode45 wrappers, config parsers). |
+| **`+Utils`** | Helper functions (config loaders, angle normalization). |
 
 ---
 
@@ -39,9 +40,13 @@ The project is organized into MATLAB packages (`+folder`) to enforce namespace s
 
 **`Core.Simulator`**
 
-* **Role:** The engine. Orchestrates the simulation loop. It decouples the math model from the time-stepping logic.
-* **Key Properties:** `CurrentState`, `Time`, `SolverType`.
+* **Role:** The engine. Orchestrates the simulation loop. It decouples the math model from the time-stepping logic; the integration engine is provided by the **`+Integration`** package (Euler, RK4, or ode45).
+* **Key Properties:** `CurrentState`, `Time`, `SolverType` ("euler" \| "rk4" \| "ode45").
 * **Key Methods:** `step()`, `run()`.
+
+**`Integration` package**
+
+* **Role:** Pluggable ODE solvers. `ISolver` defines the interface; `EulerSolver`, `RK4Solver`, `ODE45Solver` implement it. Use `Integration.SolverFactory.getSolver(name)` to obtain a solver; the Simulator uses this to advance state each step.
 
 ### B. The Control Layer (`+Control`)
 

@@ -32,8 +32,8 @@ classdef ConfigLoader
             config.TimeSpan     = [0 10];               % [tStart, tEnd] in seconds
 
             % --- Simulator (solver) ---
-            config.StepSize  = 0.005;   % Fixed step for RK4 (s); smaller = smoother, slower
-            config.SolverType = "rk4";  % "rk4" (used by Simulator.run) or "ode45"
+            config.StepSize  = 0.005;   % Fixed step (s); smaller = smoother, slower
+            config.SolverType = "rk4";  % "euler" | "rk4" | "ode45" (Integration package)
 
             % --- Control (LQR); only used when EnableControl is true ---
             config.EnableControl = false;
