@@ -41,8 +41,9 @@ classdef StatePlotter < handle
             state = sim.CurrentState;
             u = sim.Controller.computeControl(t, state);
             obj.TData   = [obj.TData; t];
-            obj.Th1Data = [obj.Th1Data; state(1)];
-            obj.Th2Data = [obj.Th2Data; state(2)];
+            % Wrap angles to [-pi, pi] for correct display (integrator may unwrap)
+            obj.Th1Data = [obj.Th1Data; Utils.normalizeAngle(state(1))];
+            obj.Th2Data = [obj.Th2Data; Utils.normalizeAngle(state(2))];
             obj.W1Data  = [obj.W1Data; state(3)];
             obj.W2Data  = [obj.W2Data; state(4)];
             obj.UData   = [obj.UData; u];

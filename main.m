@@ -4,6 +4,12 @@ clc;
 clear;
 close all force;
 
+% -------------------------------------------------------------------------
+% Flags: set to true/false to enable or disable
+% -------------------------------------------------------------------------
+DEBUG  = true;   % When true: print config, setup, and full end summary to command window
+VISUAL = true;   % When true: show figures (animator, state plot, Poincaré map)
+
 % Fix RNG seed for reproducible results
 rng(0);
 
@@ -20,24 +26,31 @@ else
     ctrl = Control.NullController();
 end
 
-% 3. Visualization
-vizManager = Vis.VisualizerManager();
-vizManager.add(Vis.PendulumAnimator());
-vizManager.add(Vis.StatePlotter());
-vizManager.add(Vis.PoincareMap('XVar', 'theta1', 'YVar', 'theta2'));
+% 3. Visualization (only when VISUAL is on)
+if VISUAL
+    vizManager = Vis.VisualizerManager();
+    vizManager.add(Vis.PendulumAnimator());
+    vizManager.add(Vis.StatePlotter());
+    vizManager.add(Vis.PoincareMap('XVar', 'theta1', 'YVar', 'theta2'));
+end
 
 % 4. Simulator and run
 sim = Core.Simulator(model, ctrl);
-sim.attachObserver(vizManager);
+if VISUAL
+    sim.attachObserver(vizManager);
+end
 sim.setState(app.InitialState, 0);
 sim.StepSize = 0.005;   % smaller step for smoother simulation
-debugPrintConfig(app, model, ctrl);
-debugPrintSimSetup(sim, app.TimeSpan);
+
+if DEBUG
+    debugPrintConfig(app, model, ctrl);
+    debugPrintSimSetup(sim, app.TimeSpan);
+end
 sim.run(app.TimeSpan);
-debugPrintSimEnd(sim);
+debugPrintEnd(sim, DEBUG, VISUAL);
 
 %% -------------------------------------------------------------------------
-%% Debug print helpers (clear, formatted)
+%% Debug / summary print helpers
 %% -------------------------------------------------------------------------
 function debugPrintConfig(app, model, ctrl)
     fprintf('\n');
@@ -71,17 +84,25 @@ function debugPrintSimSetup(sim, timeSpan)
     fprintf('------------------------------------------------------------------------\n\n');
 end
 
-function debugPrintSimEnd(sim)
-    fprintf('\n');
-    fprintf('========================================================================\n');
-    fprintf('  SIMULATION COMPLETE\n');
-    fprintf('========================================================================\n');
-    fprintf('  Final time t = %.6g s\n', sim.Time);
-    fprintf('  Final state: [theta1, theta2, omega1, omega2] =\n');
-    fprintf('    [ %.6g, %.6g, %.6g, %.6g ]\n', ...
-        sim.CurrentState(1), sim.CurrentState(2), sim.CurrentState(3), sim.CurrentState(4));
-    fprintf('  Total steps: %d\n', sim.StepCount);
-    fprintf('========================================================================\n\n');
+% Print at end of run: full block if DEBUG; else one-line summary only when no visualization
+function debugPrintEnd(sim, debug, visual)
+    if debug
+        fprintf('\n');
+        fprintf('========================================================================\n');
+        fprintf('  SIMULATION COMPLETE\n');
+        fprintf('========================================================================\n');
+        fprintf('  Final time t = %.6g s\n', sim.Time);
+        fprintf('  Final state: [theta1, theta2, omega1, omega2] =\n');
+        fprintf('    [ %.6g, %.6g, %.6g, %.6g ]\n', ...
+            sim.CurrentState(1), sim.CurrentState(2), sim.CurrentState(3), sim.CurrentState(4));
+        fprintf('  Total steps: %d\n', sim.StepCount);
+        fprintf('========================================================================\n\n');
+    elseif ~visual
+        % No visualization: give minimal feedback so user knows run finished
+        x = sim.CurrentState;
+        fprintf('Simulation complete: t = %.4g s, %d steps. Final state [th1, th2, om1, om2] = [%.4g, %.4g, %.4g, %.4g]\n', ...
+            sim.Time, sim.StepCount, x(1), x(2), x(3), x(4));
+    end
 end
 
 function out = iif(cond, a, b)

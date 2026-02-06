@@ -68,6 +68,10 @@ classdef PoincareMap < handle
         function v = getVarVec(obj, states, name)
             idx = obj.varIndex(name);
             v = states(:, idx);
+            % Wrap angle variables to [-pi, pi] for correct display
+            if name == "theta1" || name == "theta2"
+                v = Utils.normalizeAngle(v);
+            end
         end
 
         function v = getVar(~, state, name)
