@@ -9,6 +9,7 @@ classdef Simulator < handle
         Time        (1,1) double = 0
         SolverType  (1,1) string = "rk4"   % "rk4" or "ode45"
         StepSize    (1,1) double = 0.02    % used for run() fixed-step and for RK4
+        StepCount   (1,1) double = 0       % total steps in last run (for debugging)
     end
 
     properties (Access = private)
@@ -41,11 +42,13 @@ classdef Simulator < handle
             % run(obj, timeSpan)  Integrate from Time to timeSpan(2) using controller; notify observers each step.
             tEnd = timeSpan(end);
             dt = obj.StepSize;
+            obj.StepCount = 0;
             obj.notifyObservers();  % draw initial state
             while obj.Time < tEnd
                 u = obj.Controller.computeControl(obj.Time, obj.CurrentState);
                 stepDt = min(dt, tEnd - obj.Time);
                 obj.step(stepDt, u);
+                obj.StepCount = obj.StepCount + 1;
                 obj.notifyObservers();
             end
         end
