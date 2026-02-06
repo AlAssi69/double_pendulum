@@ -4,6 +4,9 @@ clc;
 clear;
 close all force;
 
+% Fix RNG seed for reproducible results
+rng(0);
+
 % 1. Default config and GUI
 config = Utils.ConfigLoader.loadDefault();
 app = UI.ConfigWindow(config);

@@ -25,7 +25,9 @@ classdef PoincareMap < handle
             vars = ["theta1", "theta2", "omega1", "omega2"];
             obj.Fig = figure('Color', [1 1 1], 'Name', 'Poincaré Map', 'Position', [920, 320, 420, 420]);
             obj.Ax = axes(obj.Fig, 'Position', [0.12 0.2 0.75 0.7], 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
-            grid(obj.Ax, 'on');
+            obj.Ax.XGrid = 'on';
+            obj.Ax.YGrid = 'on';
+            obj.Ax.Box = 'on';
             colormap(obj.Ax, [1 0 0; 1 0.3 0; 0.2 0.4 0.8; 0 0 1]);  % red (t=0) -> blue (t end)
             obj.Ax.CLim = [0 1];
             obj.Scatter = scatter(obj.Ax, NaN, NaN, 6, 0.5, 'filled');
@@ -50,6 +52,7 @@ classdef PoincareMap < handle
                 c = (t - min(t)) / (tRange + 1e-10);  % 0 at start (red), 1 at end (blue)
             end
             set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', c);
+            grid(obj.Ax, 'on');
             drawnow;
         end
 
@@ -96,6 +99,7 @@ classdef PoincareMap < handle
                 c = (t - min(t)) / (tRange + 1e-10);
             end
             set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', c);
+            grid(obj.Ax, 'on');
             xlabel(obj.Ax, obj.XVar);
             ylabel(obj.Ax, obj.YVar);
         end
