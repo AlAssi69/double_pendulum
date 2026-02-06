@@ -22,9 +22,9 @@ classdef PoincareMap < handle
                 if strcmpi(varargin{i}, 'YVar'), obj.YVar = string(varargin{i+1}); end
             end
             vars = ["theta1", "theta2", "omega1", "omega2"];
-            obj.Fig = figure('Color', [0.12 0.12 0.15], 'Name', 'Poincaré Map');
-            obj.Ax = axes(obj.Fig, 'Position', [0.12 0.2 0.75 0.7], 'Color', [0.12 0.12 0.15], 'XColor', [0.7 0.7 0.8], 'YColor', [0.7 0.7 0.8]);
-            obj.Scatter = scatter(obj.Ax, NaN, NaN, 4, [1 0.5 1], 'filled');
+            obj.Fig = figure('Color', [1 1 1], 'Name', 'Poincaré Map');
+            obj.Ax = axes(obj.Fig, 'Position', [0.12 0.2 0.75 0.7], 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
+            obj.Scatter = scatter(obj.Ax, NaN, NaN, 4, [0.5 0 0.5], 'filled');
             xlabel(obj.Ax, obj.XVar);
             ylabel(obj.Ax, obj.YVar);
             uicontrol(obj.Fig, 'Style', 'text', 'String', 'X:', 'Units', 'normalized', 'Position', [0.02 0.05 0.04 0.04]);
@@ -38,7 +38,7 @@ classdef PoincareMap < handle
             obj.StateHistory = [obj.StateHistory; state];
             [xd, yd] = obj.xyFromHistory();
             set(obj.Scatter, 'XData', xd, 'YData', yd);
-            drawnow limitrate;
+            drawnow;
         end
 
         function [xd, yd] = xyFromHistory(obj)

@@ -16,16 +16,16 @@ classdef StatePlotter < handle
 
     methods
         function obj = StatePlotter()
-            obj.Fig = figure('Color', [0.12 0.12 0.15], 'Name', 'State & Control');
-            obj.AxTh  = subplot(3,1,1, 'Parent', obj.Fig, 'Color', [0.12 0.12 0.15], 'XColor', [0.7 0.7 0.8], 'YColor', [0.7 0.7 0.8]);
-            obj.AxVel = subplot(3,1,2, 'Parent', obj.Fig, 'Color', [0.12 0.12 0.15], 'XColor', [0.7 0.7 0.8], 'YColor', [0.7 0.7 0.8]);
-            obj.AxU   = subplot(3,1,3, 'Parent', obj.Fig, 'Color', [0.12 0.12 0.15], 'XColor', [0.7 0.7 0.8], 'YColor', [0.7 0.7 0.8]);
+            obj.Fig = figure('Color', [1 1 1], 'Name', 'State & Control');
+            obj.AxTh  = subplot(3,1,1, 'Parent', obj.Fig, 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
+            obj.AxVel = subplot(3,1,2, 'Parent', obj.Fig, 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
+            obj.AxU   = subplot(3,1,3, 'Parent', obj.Fig, 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
             hold(obj.AxTh, 'on'); hold(obj.AxVel, 'on'); hold(obj.AxU, 'on');
-            plot(obj.AxTh,  NaN, NaN, 'Color', [0 1 1], 'DisplayName', '\theta_1');
-            plot(obj.AxTh,  NaN, NaN, 'Color', [1 0 1], 'DisplayName', '\theta_2');
-            plot(obj.AxVel, NaN, NaN, 'Color', [0 1 1], 'DisplayName', '\omega_1');
-            plot(obj.AxVel, NaN, NaN, 'Color', [1 0 1], 'DisplayName', '\omega_2');
-            plot(obj.AxU,   NaN, NaN, 'Color', [0.8 0.8 0], 'DisplayName', 'u');
+            plot(obj.AxTh,  NaN, NaN, 'Color', [0 0.5 0.6], 'DisplayName', '\theta_1');
+            plot(obj.AxTh,  NaN, NaN, 'Color', [0.6 0 0.6], 'DisplayName', '\theta_2');
+            plot(obj.AxVel, NaN, NaN, 'Color', [0 0.5 0.6], 'DisplayName', '\omega_1');
+            plot(obj.AxVel, NaN, NaN, 'Color', [0.6 0 0.6], 'DisplayName', '\omega_2');
+            plot(obj.AxU,   NaN, NaN, 'Color', [0.6 0.6 0], 'DisplayName', 'u');
             legend(obj.AxTh, 'Location', 'northeast');
             legend(obj.AxVel, 'Location', 'northeast');
             legend(obj.AxU, 'Location', 'northeast');
@@ -53,7 +53,7 @@ classdef StatePlotter < handle
             set(kidsVel(2), 'XData', obj.TData, 'YData', obj.W1Data);
             set(kidsVel(1), 'XData', obj.TData, 'YData', obj.W2Data);
             set(kidsU(1), 'XData', obj.TData, 'YData', obj.UData);
-            drawnow limitrate;
+            drawnow;
         end
     end
 end

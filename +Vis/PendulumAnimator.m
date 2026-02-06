@@ -1,5 +1,5 @@
 classdef PendulumAnimator < handle
-    % PendulumAnimator  Renders 2D double-pendulum; dark/neon style, trace for mass 2.
+    % PendulumAnimator  Renders 2D double-pendulum; white theme, black text, trace for mass 2.
 
     properties (Access = private)
         Fig
@@ -15,16 +15,16 @@ classdef PendulumAnimator < handle
 
     methods
         function obj = PendulumAnimator()
-            obj.Fig = figure('Color', [0.08 0.08 0.12], 'Name', 'Double Pendulum');
-            obj.Ax = axes(obj.Fig, 'Position', [0.05 0.05 0.9 0.9], 'Color', [0.08 0.08 0.12], ...
-                'XColor', [0.6 0.6 0.7], 'YColor', [0.6 0.6 0.7]);
+            obj.Fig = figure('Color', [1 1 1], 'Name', 'Double Pendulum');
+            obj.Ax = axes(obj.Fig, 'Position', [0.05 0.05 0.9 0.9], 'Color', [1 1 1], ...
+                'XColor', [0 0 0], 'YColor', [0 0 0]);
             hold(obj.Ax, 'on');
             axis(obj.Ax, 'equal');
-            obj.Trace = plot(obj.Ax, NaN, NaN, 'Color', [1 0.5 1 0.4], 'LineWidth', 1.5);
-            obj.Line1 = plot(obj.Ax, [0 0], [0 0], 'Color', [0 1 1], 'LineWidth', 4);
-            obj.Line2 = plot(obj.Ax, [0 0], [0 0], 'Color', [1 0 1], 'LineWidth', 4);
-            obj.Mass1 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [0 1 1], 'MarkerEdgeColor', [1 1 1], 'LineWidth', 1.5);
-            obj.Mass2 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [1 0 1], 'MarkerEdgeColor', [1 1 1], 'LineWidth', 1.5);
+            obj.Trace = plot(obj.Ax, NaN, NaN, 'Color', [0.6 0 0.6 0.5], 'LineWidth', 1.5);
+            obj.Line1 = plot(obj.Ax, [0 0], [0 0], 'Color', [0 0.5 0.6], 'LineWidth', 4);
+            obj.Line2 = plot(obj.Ax, [0 0], [0 0], 'Color', [0.6 0 0.6], 'LineWidth', 4);
+            obj.Mass1 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [0 0.5 0.6], 'MarkerEdgeColor', [0 0 0], 'LineWidth', 1.5);
+            obj.Mass2 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [0.6 0 0.6], 'MarkerEdgeColor', [0 0 0], 'LineWidth', 1.5);
             L = 2.2;
             xlim(obj.Ax, [-L L]);
             ylim(obj.Ax, [-L L]);
@@ -52,7 +52,7 @@ classdef PendulumAnimator < handle
                 obj.TraceData = obj.TraceData(end-obj.MaxTracePoints+1:end, :);
             end
             set(obj.Trace, 'XData', obj.TraceData(:,1), 'YData', obj.TraceData(:,2));
-            drawnow limitrate;
+            drawnow;
         end
     end
 end
