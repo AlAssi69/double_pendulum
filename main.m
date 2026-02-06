@@ -1,24 +1,21 @@
 % DoublePendulumSim main entry: config GUI, then run simulation with optional LQR control.
+% All configuration defaults are in Utils.ConfigLoader.loadDefault().
 
 clc;
 clear;
 close all force;
 
-% -------------------------------------------------------------------------
-% Flags: set to true/false to enable or disable
-% -------------------------------------------------------------------------
-DEBUG  = true;   % When true: print config, setup, and full end summary to command window
-VISUAL = true;   % When true: show figures (animator, state plot, Poincaré map)
-
-% Fix RNG seed for reproducible results
-rng(0);
-
-% 1. Default config and GUI
+% 1. Load central config (single source of parameters)
 config = Utils.ConfigLoader.loadDefault();
+if ~isempty(config.RngSeed)
+    rng(config.RngSeed);
+end
+
+% 2. Config GUI (edits Params, InitialState, TimeSpan, EnableControl, Q, R)
 app = UI.ConfigWindow(config);
 waitfor(app.Fig);
 
-% 2. Build model and controller
+% 3. Build model and controller
 model = Core.DoublePendulumModel(app.Params);
 if app.EnableControl
     ctrl = Control.LQRController(model, app.Q, app.R);
@@ -26,28 +23,29 @@ else
     ctrl = Control.NullController();
 end
 
-% 3. Visualization (only when VISUAL is on)
-if VISUAL
+% 4. Visualization (only when config.Visual is on)
+if config.Visual
     vizManager = Vis.VisualizerManager();
     vizManager.add(Vis.PendulumAnimator());
     vizManager.add(Vis.StatePlotter());
-    vizManager.add(Vis.PoincareMap('XVar', 'theta1', 'YVar', 'theta2'));
+    vizManager.add(Vis.PoincareMap('XVar', config.PoincareXVar, 'YVar', config.PoincareYVar));
 end
 
-% 4. Simulator and run
+% 5. Simulator and run
 sim = Core.Simulator(model, ctrl);
-if VISUAL
+sim.StepSize = config.StepSize;
+sim.SolverType = config.SolverType;
+if config.Visual
     sim.attachObserver(vizManager);
 end
 sim.setState(app.InitialState, 0);
-sim.StepSize = 0.005;   % smaller step for smoother simulation
 
-if DEBUG
+if config.Debug
     debugPrintConfig(app, model, ctrl);
     debugPrintSimSetup(sim, app.TimeSpan);
 end
 sim.run(app.TimeSpan);
-debugPrintEnd(sim, DEBUG, VISUAL);
+debugPrintEnd(sim, config.Debug, config.Visual);
 
 %% -------------------------------------------------------------------------
 %% Debug / summary print helpers
