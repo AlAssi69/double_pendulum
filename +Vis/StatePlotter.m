@@ -16,16 +16,17 @@ classdef StatePlotter < handle
 
     methods
         function obj = StatePlotter()
-            obj.Fig = figure('Color', [1 1 1], 'Name', 'State & Control');
+            obj.Fig = figure('Color', [1 1 1], 'Name', 'State & Control', 'Position', [480, 320, 420, 520]);
             obj.AxTh  = subplot(3,1,1, 'Parent', obj.Fig, 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
             obj.AxVel = subplot(3,1,2, 'Parent', obj.Fig, 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
             obj.AxU   = subplot(3,1,3, 'Parent', obj.Fig, 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
             hold(obj.AxTh, 'on'); hold(obj.AxVel, 'on'); hold(obj.AxU, 'on');
-            plot(obj.AxTh,  NaN, NaN, 'Color', [0 0.5 0.6], 'DisplayName', '\theta_1');
-            plot(obj.AxTh,  NaN, NaN, 'Color', [0.6 0 0.6], 'DisplayName', '\theta_2');
-            plot(obj.AxVel, NaN, NaN, 'Color', [0 0.5 0.6], 'DisplayName', '\omega_1');
-            plot(obj.AxVel, NaN, NaN, 'Color', [0.6 0 0.6], 'DisplayName', '\omega_2');
-            plot(obj.AxU,   NaN, NaN, 'Color', [0.6 0.6 0], 'DisplayName', 'u');
+            grid(obj.AxTh, 'on'); grid(obj.AxVel, 'on'); grid(obj.AxU, 'on');
+            plot(obj.AxTh,  NaN, NaN, 'Color', [0 0.5 0.6], 'LineWidth', 2, 'DisplayName', '\theta_1');
+            plot(obj.AxTh,  NaN, NaN, 'Color', [0.6 0 0.6], 'LineWidth', 2, 'DisplayName', '\theta_2');
+            plot(obj.AxVel, NaN, NaN, 'Color', [0 0.5 0.6], 'LineWidth', 2, 'DisplayName', '\omega_1');
+            plot(obj.AxVel, NaN, NaN, 'Color', [0.6 0 0.6], 'LineWidth', 2, 'DisplayName', '\omega_2');
+            plot(obj.AxU,   NaN, NaN, 'Color', [1 0 0], 'LineWidth', 2, 'DisplayName', 'u');
             legend(obj.AxTh, 'Location', 'northeast');
             legend(obj.AxVel, 'Location', 'northeast');
             legend(obj.AxU, 'Location', 'northeast');

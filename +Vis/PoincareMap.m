@@ -11,6 +11,7 @@ classdef PoincareMap < handle
         Ax
         Scatter
         StateHistory = []   % Nx4
+        TimeHistory = []    % Nx1, for color gradient (t=0 red -> blue)
         DropdownX
         DropdownY
     end
@@ -22,9 +23,12 @@ classdef PoincareMap < handle
                 if strcmpi(varargin{i}, 'YVar'), obj.YVar = string(varargin{i+1}); end
             end
             vars = ["theta1", "theta2", "omega1", "omega2"];
-            obj.Fig = figure('Color', [1 1 1], 'Name', 'Poincaré Map');
+            obj.Fig = figure('Color', [1 1 1], 'Name', 'Poincaré Map', 'Position', [920, 320, 420, 420]);
             obj.Ax = axes(obj.Fig, 'Position', [0.12 0.2 0.75 0.7], 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
-            obj.Scatter = scatter(obj.Ax, NaN, NaN, 4, [0.5 0 0.5], 'filled');
+            grid(obj.Ax, 'on');
+            colormap(obj.Ax, [1 0 0; 1 0.3 0; 0.2 0.4 0.8; 0 0 1]);  % red (t=0) -> blue (t end)
+            obj.Ax.CLim = [0 1];
+            obj.Scatter = scatter(obj.Ax, NaN, NaN, 6, 0.5, 'filled');
             xlabel(obj.Ax, obj.XVar);
             ylabel(obj.Ax, obj.YVar);
             uicontrol(obj.Fig, 'Style', 'text', 'String', 'X:', 'Units', 'normalized', 'Position', [0.02 0.05 0.04 0.04]);
@@ -36,8 +40,16 @@ classdef PoincareMap < handle
         function update(obj, sim)
             state = sim.CurrentState(:)';
             obj.StateHistory = [obj.StateHistory; state];
+            obj.TimeHistory = [obj.TimeHistory; sim.Time];
             [xd, yd] = obj.xyFromHistory();
-            set(obj.Scatter, 'XData', xd, 'YData', yd);
+            if isempty(obj.TimeHistory)
+                c = 0.5;
+            else
+                t = obj.TimeHistory;
+                tRange = max(t) - min(t);
+                c = (t - min(t)) / (tRange + 1e-10);  % 0 at start (red), 1 at end (blue)
+            end
+            set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', c);
             drawnow;
         end
 
@@ -76,7 +88,14 @@ classdef PoincareMap < handle
                 obj.YVar = vars(get(obj.DropdownY, 'Value'));
             end
             [xd, yd] = obj.xyFromHistory();
-            set(obj.Scatter, 'XData', xd, 'YData', yd);
+            if isempty(obj.TimeHistory)
+                c = 0.5;
+            else
+                t = obj.TimeHistory;
+                tRange = max(t) - min(t);
+                c = (t - min(t)) / (tRange + 1e-10);
+            end
+            set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', c);
             xlabel(obj.Ax, obj.XVar);
             ylabel(obj.Ax, obj.YVar);
         end

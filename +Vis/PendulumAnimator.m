@@ -15,10 +15,11 @@ classdef PendulumAnimator < handle
 
     methods
         function obj = PendulumAnimator()
-            obj.Fig = figure('Color', [1 1 1], 'Name', 'Double Pendulum');
+            obj.Fig = figure('Color', [1 1 1], 'Name', 'Double Pendulum', 'Position', [40, 320, 420, 420]);
             obj.Ax = axes(obj.Fig, 'Position', [0.05 0.05 0.9 0.9], 'Color', [1 1 1], ...
                 'XColor', [0 0 0], 'YColor', [0 0 0]);
             hold(obj.Ax, 'on');
+            grid(obj.Ax, 'on');
             axis(obj.Ax, 'equal');
             obj.Trace = plot(obj.Ax, NaN, NaN, 'Color', [0.6 0 0.6 0.5], 'LineWidth', 1.5);
             obj.Line1 = plot(obj.Ax, [0 0], [0 0], 'Color', [0 0.5 0.6], 'LineWidth', 4);
