@@ -21,11 +21,11 @@ classdef PendulumAnimator < handle
             hold(obj.Ax, 'on');
             grid(obj.Ax, 'on');
             axis(obj.Ax, 'equal');
-            obj.Trace = plot(obj.Ax, NaN, NaN, 'Color', [0.6 0 0.6 0.5], 'LineWidth', 1.5);
-            obj.Line1 = plot(obj.Ax, [0 0], [0 0], 'Color', [0 0.5 0.6], 'LineWidth', 4);
-            obj.Line2 = plot(obj.Ax, [0 0], [0 0], 'Color', [0.6 0 0.6], 'LineWidth', 4);
-            obj.Mass1 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [0 0.5 0.6], 'MarkerEdgeColor', [0 0 0], 'LineWidth', 1.5);
-            obj.Mass2 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [0.6 0 0.6], 'MarkerEdgeColor', [0 0 0], 'LineWidth', 1.5);
+            obj.Trace = plot(obj.Ax, NaN, NaN, 'Color', [0 0 1 0.5], 'LineWidth', 1.5);
+            obj.Line1 = plot(obj.Ax, [0 0], [0 0], 'Color', [1 0 0], 'LineWidth', 4);
+            obj.Line2 = plot(obj.Ax, [0 0], [0 0], 'Color', [0 0 1], 'LineWidth', 4);
+            obj.Mass1 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [1 0 0], 'MarkerEdgeColor', [0 0 0], 'LineWidth', 1.5);
+            obj.Mass2 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [0 0 1], 'MarkerEdgeColor', [0 0 0], 'LineWidth', 1.5);
             L = 2.2;
             xlim(obj.Ax, [-L L]);
             ylim(obj.Ax, [-L L]);
