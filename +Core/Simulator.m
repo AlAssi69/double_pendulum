@@ -11,6 +11,7 @@ classdef Simulator < handle
         SolverType  (1,1) string = "rk4"   % "euler" | "rk4" | "ode45"
         StepSize    (1,1) double = 0.02    % fixed step for run() and fixed-step solvers
         StepCount   (1,1) double = 0       % total steps in last run (for debugging)
+        Debug       (1,1) logical = false  % if true, print solver info once at run start
     end
 
     properties (Access = private)
@@ -42,6 +43,9 @@ classdef Simulator < handle
 
         function run(obj, timeSpan)
             % run(obj, timeSpan)  Integrate from Time to timeSpan(2) using controller; notify observers each step.
+            if obj.Debug
+                fprintf('  Integration: %s (dt = %.6g s)\n', obj.SolverType, obj.StepSize);
+            end
             tEnd = timeSpan(end);
             dt = obj.StepSize;
             obj.StepCount = 0;

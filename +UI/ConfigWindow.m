@@ -5,6 +5,8 @@ classdef ConfigWindow < handle
         Params        struct
         InitialState  (4,1) double
         TimeSpan      (1,2) double
+        SolverType    (1,1) string = "rk4"   % "euler" | "rk4" | "ode45"
+        StepSize      (1,1) double = 0.02
         EnableControl (1,1) logical = false
         Q             (4,4) double
         R             (1,1) double
@@ -20,12 +22,14 @@ classdef ConfigWindow < handle
             obj.Params = config.Params;
             obj.InitialState = config.InitialState(:);
             obj.TimeSpan = config.TimeSpan;
+            obj.SolverType = string(config.SolverType);
+            obj.StepSize = config.StepSize;
             obj.EnableControl = config.EnableControl;
             obj.Q = config.Q;
             obj.R = config.R;
 
-            obj.Fig = uifigure('Name', 'Double Pendulum Config', 'Position', [100 100 380 420]);
-            y = 380;
+            obj.Fig = uifigure('Name', 'Double Pendulum Config', 'Position', [100 100 380 480]);
+            y = 440;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'm1');
             obj.addEdit(140, y, num2str(obj.Params.m1), @(v) setP(obj, 'm1', v));
             y = y - 28;
@@ -46,6 +50,12 @@ classdef ConfigWindow < handle
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Time span [t0 tEnd]');
             obj.addEdit(140, y, mat2str(obj.TimeSpan), @(v) setTS(obj, v));
+            y = y - 28;
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Solver');
+            obj.addSolverDropdown(140, y);
+            y = y - 28;
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Step size dt');
+            obj.addEdit(140, y, num2str(obj.StepSize), @(v) setStepSize(obj, v));
             y = y - 32;
             obj.addCheckbox(20, y, 'Enable LQR control', obj.EnableControl, @(v) set(obj, 'EnableControl', v));
             y = y - 36;
@@ -81,6 +91,16 @@ classdef ConfigWindow < handle
         function setTS(obj, v)
             ts = str2num(v);
             if numel(ts) >= 2, obj.TimeSpan = [ts(1) ts(2)]; end
+        end
+
+        function addSolverDropdown(obj, x, y)
+            items = ["euler", "rk4", "ode45"];
+            uidropdown(obj.Fig, 'Position', [x y 100 22], 'Items', items, ...
+                'Value', obj.SolverType, 'ValueChangedFcn', @(src,~) set(obj, 'SolverType', string(src.Value)));
+        end
+
+        function setStepSize(obj, v)
+            if ~isnan(v) && v > 0, obj.StepSize = v; end
         end
 
         function doClose(obj)

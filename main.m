@@ -31,10 +31,11 @@ if config.Visual
     vizManager.add(Vis.PoincareMap('XVar', config.PoincareXVar, 'YVar', config.PoincareYVar));
 end
 
-% 5. Simulator and run
+% 5. Simulator and run (solver and step size from config GUI)
 sim = Core.Simulator(model, ctrl);
-sim.StepSize = config.StepSize;
-sim.SolverType = config.SolverType;
+sim.StepSize = app.StepSize;
+sim.SolverType = app.SolverType;
+sim.Debug = config.Debug;
 if config.Visual
     sim.attachObserver(vizManager);
 end

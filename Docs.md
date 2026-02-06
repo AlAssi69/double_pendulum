@@ -41,8 +41,8 @@ The project is organized into MATLAB packages (`+folder`) to enforce namespace s
 **`Core.Simulator`**
 
 * **Role:** The engine. Orchestrates the simulation loop. It decouples the math model from the time-stepping logic; the integration engine is provided by the **`+Integration`** package (Euler, RK4, or ode45).
-* **Key Properties:** `CurrentState`, `Time`, `SolverType` ("euler" \| "rk4" \| "ode45").
-* **Key Methods:** `step()`, `run()`.
+* **Key Properties:** `CurrentState`, `Time`, `SolverType` ("euler" \| "rk4" \| "ode45"), `StepSize`, `Debug` (when true, prints solver and step size once at run start).
+* **Key Methods:** `step(dt, u)`, `run(timeSpan)`.
 
 **`Integration` package**
 
@@ -89,8 +89,9 @@ The project is organized into MATLAB packages (`+folder`) to enforce namespace s
 
 **`UI.ConfigWindow`**
 
-* **Role:** Entry point GUI (built with `uifigure`).
-* **Fields:** Mass sliders, Length inputs, Initial Condition () entry, Controller selection toggle.
+* **Role:** Entry point GUI (built with `uifigure`). Blocking until user clicks Start; exposes edited config via properties.
+* **Fields:** Model params (m1, m2, L1, L2), Initial state (θ1, θ2), Time span, **Solver** (dropdown: euler \| rk4 \| ode45), **Step size dt**, Enable LQR control, LQR Q/R (when control enabled).
+* **Properties:** `Params`, `InitialState`, `TimeSpan`, `SolverType`, `StepSize`, `EnableControl`, `Q`, `R`.
 
 ---
 
@@ -114,9 +115,9 @@ The `Core.DoublePendulumModel` implementation ensures conservation of energy (in
 % 1. Initialize Default Configuration
 config = Utils.ConfigLoader.loadDefault();
 
-% 2. Launch GUI to allow user overrides
+% 2. Launch GUI to allow user overrides (Params, InitialState, TimeSpan, Solver, Step size, LQR, Q, R)
 app = UI.ConfigWindow(config);
-waitfor(app); % Wait until user hits 'Start'
+waitfor(app.Fig); % Block until user clicks 'Start'
 
 % 3. Instantiate Core
 model = Core.DoublePendulumModel(app.Params);
@@ -128,15 +129,22 @@ else
     ctrl = Control.NullController();
 end
 
-% 5. Setup Visualization
-vizManager = Vis.VisualizerManager();
-vizManager.add(Vis.PendulumAnimator());
-vizManager.add(Vis.StatePlotter());
-vizManager.add(Vis.PoincareMap('XVar', 'theta1', 'YVar', 'theta2'));
+% 5. Setup Visualization (when config.Visual)
+if config.Visual
+    vizManager = Vis.VisualizerManager();
+    vizManager.add(Vis.PendulumAnimator());
+    vizManager.add(Vis.StatePlotter());
+    vizManager.add(Vis.PoincareMap('XVar', config.PoincareXVar, 'YVar', config.PoincareYVar));
+end
 
-% 6. Run Simulation
+% 6. Run Simulation (solver and step size from app; debug from config)
 sim = Core.Simulator(model, ctrl);
-sim.attachObserver(vizManager);
+sim.StepSize = app.StepSize;
+sim.SolverType = app.SolverType;
+sim.Debug = config.Debug;
+if config.Visual, sim.attachObserver(vizManager); end
+sim.setState(app.InitialState, 0);
+if config.Debug, debugPrintConfig(app, model, ctrl); debugPrintSimSetup(sim, app.TimeSpan); end
 sim.run(app.TimeSpan);
 
 ```

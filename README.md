@@ -11,7 +11,7 @@ A **MATLAB** simulation of a double pendulum with full nonlinear dynamics, optio
    ```matlab
    main
    ```
-3. **Configure** (optional): use the config window to set masses, lengths, initial angles, time span, and whether to use LQR control.
+3. **Configure** (optional): use the config window to set masses, lengths, initial angles, time span, **solver** (euler / rk4 / ode45), **step size**, and whether to use LQR control.
 4. **Click Start** and watch:
    - 🎬 Real-time pendulum animation  
    - 📈 State plots (angles, velocities, control)  
@@ -59,7 +59,7 @@ Double Pendulum/
 | **+Control** | Null, LQR, or RL policy; all implement `computeControl(t, state)`. |
 | **+Env** | RL interface: `reset()`, `step(action)`, reward and clipping. |
 | **+Vis** | Animation, state plots, Poincaré map; attached to simulator. |
-| **+UI** | Config window for parameters and initial conditions. |
+| **+UI** | Config window: parameters, initial state, time span, solver, step size, LQR toggle. |
 | **+Utils** | Config loading, angle utils. |
 
 ---
@@ -67,8 +67,10 @@ Double Pendulum/
 ## ⚙️ What You Can Do
 
 - **Free swing** (no control): see chaotic motion and Poincaré maps.  
+- **Solver choice**: pick **euler**, **rk4**, or **ode45** and step size in the config window (or in code via `sim.SolverType` / `sim.StepSize`).  
 - **LQR control**: stabilize around the upright equilibrium (toggle in config).  
-- **RL training**: use `Env.DoublePendulumEnv` with `reset`/`step` and plug into the MATLAB RL Toolbox or your own agent.
+- **RL training**: use `Env.DoublePendulumEnv` with `reset`/`step` and plug into the MATLAB RL Toolbox or your own agent.  
+- **Debug**: set `config.Debug = true` (or in ConfigLoader) to print configuration, solver, and step count; the simulator prints integration info once at run start when `sim.Debug` is true.
 
 ---
 
