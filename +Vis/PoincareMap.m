@@ -1,5 +1,5 @@
 classdef PoincareMap < handle
-    % PoincareMap  Phase-space scatter; configurable X/Y variables (theta1, theta2, omega1, omega2).
+    % PoincareMap  Phase-plane plot with continuous lines (point a to b to c...); configurable X/Y (theta1, theta2, omega1, omega2).
 
     properties
         XVar (1,1) string = "theta1"
@@ -9,11 +9,12 @@ classdef PoincareMap < handle
     properties (Access = private)
         Fig
         Ax
-        Scatter
+        LinePlot   % line connecting points in order (continuous phase trajectory)
         StateHistory = []   % Nx4
-        TimeHistory = []    % Nx1, for color gradient (t=0 red -> blue)
+        TimeHistory = []    % Nx1
         DropdownX
         DropdownY
+        AngleUnit (1,1) string = "radian"
     end
 
     methods
@@ -21,6 +22,7 @@ classdef PoincareMap < handle
             for i = 1:2:numel(varargin)-1
                 if strcmpi(varargin{i}, 'XVar'), obj.XVar = string(varargin{i+1}); end
                 if strcmpi(varargin{i}, 'YVar'), obj.YVar = string(varargin{i+1}); end
+                if strcmpi(varargin{i}, 'AngleUnit'), obj.AngleUnit = string(varargin{i+1}); end
             end
             vars = ["theta1", "theta2", "omega1", "omega2"];
             obj.Fig = figure('Color', [1 1 1], 'Name', 'Poincaré Map', 'Position', [920, 320, 420, 420]);
@@ -28,15 +30,39 @@ classdef PoincareMap < handle
             obj.Ax.XGrid = 'on';
             obj.Ax.YGrid = 'on';
             obj.Ax.Box = 'on';
-            colormap(obj.Ax, [1 0 0; 1 0.3 0; 0.2 0.4 0.8; 0 0 1]);  % red (t=0) -> blue (t end)
-            obj.Ax.CLim = [0 1];
-            obj.Scatter = scatter(obj.Ax, NaN, NaN, 6, 0.5, 'filled');
-            xlabel(obj.Ax, obj.XVar);
-            ylabel(obj.Ax, obj.YVar);
+            hold(obj.Ax, 'on');
+            % Continuous line from point to point (phase trajectory)
+            obj.LinePlot = plot(obj.Ax, NaN, NaN, '-', 'Color', [0.2 0.4 0.8], 'LineWidth', 1.2);
+            obj.updateAxisLabels();
             uicontrol(obj.Fig, 'Style', 'text', 'String', 'X:', 'Units', 'normalized', 'Position', [0.02 0.05 0.04 0.04]);
             obj.DropdownX = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', 1, 'Units', 'normalized', 'Position', [0.07 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(1));
             uicontrol(obj.Fig, 'Style', 'text', 'String', 'Y:', 'Units', 'normalized', 'Position', [0.22 0.05 0.04 0.04]);
             obj.DropdownY = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', 2, 'Units', 'normalized', 'Position', [0.27 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(2));
+        end
+
+        function updateAxisLabels(obj)
+            xlab = obj.axisLabel(obj.XVar);
+            ylab = obj.axisLabel(obj.YVar);
+            xlabel(obj.Ax, xlab);
+            ylabel(obj.Ax, ylab);
+        end
+
+        function lab = axisLabel(obj, name)
+            if name == "theta1" || name == "theta2"
+                if strcmpi(obj.AngleUnit, 'degree')
+                    lab = name + " (°)";
+                else
+                    lab = name + " (rad)";
+                end
+            elseif name == "omega1" || name == "omega2"
+                if strcmpi(obj.AngleUnit, 'degree')
+                    lab = name + " (°/s)";
+                else
+                    lab = name + " (rad/s)";
+                end
+            else
+                lab = name;
+            end
         end
 
         function update(obj, sim)
@@ -44,14 +70,7 @@ classdef PoincareMap < handle
             obj.StateHistory = [obj.StateHistory; state];
             obj.TimeHistory = [obj.TimeHistory; sim.Time];
             [xd, yd] = obj.xyFromHistory();
-            if isempty(obj.TimeHistory)
-                c = 0.5;
-            else
-                t = obj.TimeHistory;
-                tRange = max(t) - min(t);
-                c = (t - min(t)) / (tRange + 1e-10);  % 0 at start (red), 1 at end (blue)
-            end
-            set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', c);
+            set(obj.LinePlot, 'XData', xd, 'YData', yd);
             grid(obj.Ax, 'on');
             drawnow;
         end
@@ -68,9 +87,15 @@ classdef PoincareMap < handle
         function v = getVarVec(obj, states, name)
             idx = obj.varIndex(name);
             v = states(:, idx);
-            % Wrap angle variables to [-pi, pi] for correct display
+            % Unwrap angles so phase trajectory is continuous (no jumps at ±pi)
             if name == "theta1" || name == "theta2"
-                v = Utils.normalizeAngle(v);
+                v = unwrap(v);
+            end
+            % Convert to display unit
+            if (name == "theta1" || name == "theta2") && strcmpi(obj.AngleUnit, 'degree')
+                v = v * 180 / pi;
+            elseif (name == "omega1" || name == "omega2") && strcmpi(obj.AngleUnit, 'degree')
+                v = v * 180 / pi;
             end
         end
 
@@ -95,17 +120,9 @@ classdef PoincareMap < handle
                 obj.YVar = vars(get(obj.DropdownY, 'Value'));
             end
             [xd, yd] = obj.xyFromHistory();
-            if isempty(obj.TimeHistory)
-                c = 0.5;
-            else
-                t = obj.TimeHistory;
-                tRange = max(t) - min(t);
-                c = (t - min(t)) / (tRange + 1e-10);
-            end
-            set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', c);
+            set(obj.LinePlot, 'XData', xd, 'YData', yd);
             grid(obj.Ax, 'on');
-            xlabel(obj.Ax, obj.XVar);
-            ylabel(obj.Ax, obj.YVar);
+            obj.updateAxisLabels();
         end
     end
 end

@@ -1,6 +1,8 @@
 classdef DoublePendulumModel < handle
     % DoublePendulumModel  Full nonlinear double-pendulum dynamics via Euler-Lagrange.
     % State x = [theta1; theta2; theta1_dot; theta2_dot].
+    % theta1 = angle of first arm from downward vertical.
+    % theta2 = angle of second arm relative to the first (so second arm from vertical = theta1 + theta2).
     % Control u = scalar torque at shoulder (first joint) only.
     % Optional viscous damping at each joint.
 

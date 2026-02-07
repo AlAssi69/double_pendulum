@@ -26,9 +26,9 @@ end
 % 4. Visualization (only when config.Visual is on)
 if config.Visual
     vizManager = Vis.VisualizerManager();
-    vizManager.add(Vis.PendulumAnimator());
-    vizManager.add(Vis.StatePlotter());
-    vizManager.add(Vis.PoincareMap('XVar', config.PoincareXVar, 'YVar', config.PoincareYVar));
+    vizManager.add(Vis.PendulumAnimator(app.AngleUnit));
+    vizManager.add(Vis.StatePlotter(app.AngleUnit));
+    vizManager.add(Vis.PoincareMap('XVar', config.PoincareXVar, 'YVar', config.PoincareYVar, 'AngleUnit', app.AngleUnit));
 end
 
 % 5. Simulator and run (solver and step size from config GUI)

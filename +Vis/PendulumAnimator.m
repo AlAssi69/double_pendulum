@@ -11,10 +11,14 @@ classdef PendulumAnimator < handle
         Trace
         TraceData = zeros(0, 2)
         MaxTracePoints = 500
+        AngleUnit (1,1) string = "radian"   % for consistency with other visualizers
     end
 
     methods
-        function obj = PendulumAnimator()
+        function obj = PendulumAnimator(angleUnit)
+            if nargin >= 1 && ~isempty(angleUnit)
+                obj.AngleUnit = string(angleUnit);
+            end
             obj.Fig = figure('Color', [1 1 1], 'Name', 'Double Pendulum', 'Position', [40, 320, 420, 420]);
             obj.Ax = axes(obj.Fig, 'Position', [0.05 0.05 0.9 0.9], 'Color', [1 1 1], ...
                 'XColor', [0 0 0], 'YColor', [0 0 0]);

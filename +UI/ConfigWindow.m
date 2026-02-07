@@ -10,6 +10,7 @@ classdef ConfigWindow < handle
         EnableControl (1,1) logical = false
         Q             (4,4) double
         R             (1,1) double
+        AngleUnit     (1,1) string = "radian"   % "radian" | "degree" for all GUIs and plots
     end
 
     properties
@@ -22,6 +23,7 @@ classdef ConfigWindow < handle
         TimeSpanEdit     % uieditfield handle – read on Start
         ParamEdits       % struct with fields m1, m2, L1, L2 – read on Start
         StateEdits       % struct with fields th1, th2 – read on Start
+        AngleUnitDropdown   % uidropdown – read on Start
     end
 
     methods
@@ -35,8 +37,9 @@ classdef ConfigWindow < handle
             obj.EnableControl = config.EnableControl;
             obj.Q = config.Q;
             obj.R = config.R;
+            if isfield(config, 'AngleUnit'), obj.AngleUnit = string(config.AngleUnit); end
 
-            obj.Fig = uifigure('Name', 'Double Pendulum Config', 'Position', [100 100 380 480]);
+            obj.Fig = uifigure('Name', 'Double Pendulum Config', 'Position', [100 100 380 520]);
             y = 440;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'm1');
             obj.ParamEdits.m1 = obj.addEditWithHandle(140, y, num2str(obj.Params.m1), @(v) setP(obj, 'm1', v));
@@ -50,10 +53,10 @@ classdef ConfigWindow < handle
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'L2');
             obj.ParamEdits.L2 = obj.addEditWithHandle(140, y, num2str(obj.Params.L2), @(v) setP(obj, 'L2', v));
             y = y - 28;
-            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ1');
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ1 (rad)');
             obj.StateEdits.th1 = obj.addEditWithHandle(140, y, num2str(obj.InitialState(1)), @(v) setState(obj, 1, v));
             y = y - 28;
-            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ2');
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ2 (rad)');
             obj.StateEdits.th2 = obj.addEditWithHandle(140, y, num2str(obj.InitialState(2)), @(v) setState(obj, 2, v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Time span [t0 tEnd]');
@@ -64,6 +67,11 @@ classdef ConfigWindow < handle
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Step size dt');
             obj.StepSizeEdit = obj.addEditWithHandle(140, y, num2str(obj.StepSize), @(v) setStepSize(obj, v));
+            y = y - 28;
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Angle unit');
+            obj.AngleUnitDropdown = uidropdown(obj.Fig, 'Position', [140 y 100 22], ...
+                'Items', ["radian", "degree"], 'Value', obj.AngleUnit, ...
+                'ValueChangedFcn', @(src,~) set(obj, 'AngleUnit', string(src.Value)));
             y = y - 32;
             obj.addCheckbox(20, y, 'Enable LQR control', obj.EnableControl, @(v) set(obj, 'EnableControl', v));
             y = y - 36;
@@ -122,6 +130,7 @@ classdef ConfigWindow < handle
         function doClose(obj)
             % Read current GUI values into properties before figure is destroyed (so main gets selection)
             obj.SolverType = string(obj.SolverDropdown.Value);
+            obj.AngleUnit = string(obj.AngleUnitDropdown.Value);
             stepVal = str2double(obj.StepSizeEdit.Value);
             if ~isnan(stepVal) && stepVal > 0
                 obj.StepSize = stepVal;

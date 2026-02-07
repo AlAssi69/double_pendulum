@@ -40,9 +40,10 @@ classdef ConfigLoader
             config.Q = eye(4);   % State cost matrix (4x4)
             config.R = 1;        % Control cost scalar
 
-            % --- Visualization (Poincaré map axes) ---
+            % --- Visualization (Poincaré map axes, angle display) ---
             config.PoincareXVar = "theta1";
             config.PoincareYVar = "theta2";
+            config.AngleUnit = "radian";   % "radian" | "degree" for all GUIs and plots
 
             % --- Environment (RL / DoublePendulumEnv); used when creating env from config ---
             config.Env = struct( ...
