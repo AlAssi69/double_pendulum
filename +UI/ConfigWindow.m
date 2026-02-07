@@ -53,11 +53,13 @@ classdef ConfigWindow < handle
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'L2');
             obj.ParamEdits.L2 = obj.addEditWithHandle(140, y, num2str(obj.Params.L2), @(v) setP(obj, 'L2', v));
             y = y - 28;
-            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ1 (rad)');
+            % θ1, θ2 = angles from vertical (both absolute); stored as state(1), state(2)=θ2_rel=θ2_abs−θ1
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ1 (rad, from vertical)');
             obj.StateEdits.th1 = obj.addEditWithHandle(140, y, num2str(obj.InitialState(1)), @(v) setState(obj, 1, v));
             y = y - 28;
-            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ2 (rad)');
-            obj.StateEdits.th2 = obj.addEditWithHandle(140, y, num2str(obj.InitialState(2)), @(v) setState(obj, 2, v));
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ2 (rad, from vertical)');
+            th2Abs = obj.InitialState(1) + obj.InitialState(2);  % display absolute second angle
+            obj.StateEdits.th2 = obj.addEditWithHandle(140, y, num2str(th2Abs), @(v) setState(obj, 2, v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Time span [t0 tEnd]');
             obj.TimeSpanEdit = obj.addEditWithHandle(140, y, mat2str(obj.TimeSpan), @(v) setTS(obj, v));
@@ -105,7 +107,14 @@ classdef ConfigWindow < handle
 
         function setState(obj, i, v)
             if isnan(v), return; end
-            obj.InitialState(i) = v;
+            if i == 1
+                obj.InitialState(1) = v;
+                % Keep θ2 display as absolute: θ2_abs = θ1 + θ2_rel
+                obj.StateEdits.th2.Value = num2str(v + obj.InitialState(2));
+            else
+                % v = θ2 from vertical (absolute) → θ2_rel = v − θ1
+                obj.InitialState(2) = v - obj.InitialState(1);
+            end
         end
 
         function setTS(obj, v)
@@ -143,10 +152,11 @@ classdef ConfigWindow < handle
                 v = str2double(obj.ParamEdits.(fn{1}).Value);
                 if ~isnan(v), obj.Params.(fn{1}) = v; end
             end
+            % Both fields are angles from vertical (absolute); store θ2 as relative for dynamics
             v1 = str2double(obj.StateEdits.th1.Value);
-            if ~isnan(v1), obj.InitialState(1) = v1; end
             v2 = str2double(obj.StateEdits.th2.Value);
-            if ~isnan(v2), obj.InitialState(2) = v2; end
+            if ~isnan(v1), obj.InitialState(1) = v1; end
+            if ~isnan(v2), obj.InitialState(2) = v2 - obj.InitialState(1); end
             delete(obj.Fig);
         end
     end

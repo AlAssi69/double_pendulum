@@ -10,6 +10,7 @@ classdef PoincareMap < handle
         Fig
         Ax
         LinePlot   % line connecting points in order (continuous phase trajectory)
+        Scatter    % points colored by time (gradient)
         StateHistory = []   % Nx4
         TimeHistory = []    % Nx1
         DropdownX
@@ -31,8 +32,13 @@ classdef PoincareMap < handle
             obj.Ax.YGrid = 'on';
             obj.Ax.Box = 'on';
             hold(obj.Ax, 'on');
+            % Time gradient colormap (red at t=0 -> blue at t end)
+            colormap(obj.Ax, [1 0 0; 1 0.3 0; 0.2 0.4 0.8; 0 0 1]);
+            obj.Ax.CLim = [0 1];
             % Continuous line from point to point (phase trajectory)
-            obj.LinePlot = plot(obj.Ax, NaN, NaN, '-', 'Color', [0.2 0.4 0.8], 'LineWidth', 1.2);
+            obj.LinePlot = plot(obj.Ax, NaN, NaN, '-', 'Color', [0.3 0.3 0.35], 'LineWidth', 1);
+            % Scatter for gradient color by time (red = start, blue = end)
+            obj.Scatter = scatter(obj.Ax, NaN, NaN, 8, 0.5, 'filled');
             obj.updateAxisLabels();
             uicontrol(obj.Fig, 'Style', 'text', 'String', 'X:', 'Units', 'normalized', 'Position', [0.02 0.05 0.04 0.04]);
             obj.DropdownX = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', 1, 'Units', 'normalized', 'Position', [0.07 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(1));
@@ -71,8 +77,19 @@ classdef PoincareMap < handle
             obj.TimeHistory = [obj.TimeHistory; sim.Time];
             [xd, yd] = obj.xyFromHistory();
             set(obj.LinePlot, 'XData', xd, 'YData', yd);
+            set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', obj.timeColor());
             grid(obj.Ax, 'on');
             drawnow;
+        end
+
+        function c = timeColor(obj)
+            if isempty(obj.TimeHistory)
+                c = 0.5;
+            else
+                t = obj.TimeHistory;
+                tRange = max(t) - min(t);
+                c = (t - min(t)) / (tRange + 1e-10);  % 0 at start (red), 1 at end (blue)
+            end
         end
 
         function [xd, yd] = xyFromHistory(obj)
@@ -85,11 +102,17 @@ classdef PoincareMap < handle
         end
 
         function v = getVarVec(obj, states, name)
-            idx = obj.varIndex(name);
-            v = states(:, idx);
-            % Unwrap angles so phase trajectory is continuous (no jumps at ±pi)
-            if name == "theta1" || name == "theta2"
-                v = unwrap(v);
+            % theta1 = first arm from vertical; theta2 (display) = second arm from vertical = theta1 + theta2_rel
+            th1 = unwrap(states(:, 1));
+            th2_rel = unwrap(states(:, 2));
+            if name == "theta1"
+                v = th1;
+            elseif name == "theta2"
+                % Display absolute angle of second arm (so 90° and 90° = straight)
+                v = th1 + th2_rel;
+            else
+                idx = obj.varIndex(name);
+                v = states(:, idx);
             end
             % Convert to display unit
             if (name == "theta1" || name == "theta2") && strcmpi(obj.AngleUnit, 'degree')
@@ -121,6 +144,7 @@ classdef PoincareMap < handle
             end
             [xd, yd] = obj.xyFromHistory();
             set(obj.LinePlot, 'XData', xd, 'YData', yd);
+            set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', obj.timeColor());
             grid(obj.Ax, 'on');
             obj.updateAxisLabels();
         end

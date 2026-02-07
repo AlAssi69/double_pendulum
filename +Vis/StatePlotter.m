@@ -60,8 +60,9 @@ classdef StatePlotter < handle
             obj.W1Data  = [obj.W1Data; state(3)];
             obj.W2Data  = [obj.W2Data; state(4)];
             obj.UData   = [obj.UData; u];
+            % theta1 = first arm from vertical; theta2 (display) = second arm from vertical = theta1 + theta2_rel (so 90°, 90° = straight)
             th1Plot = unwrap(obj.Th1Data);
-            th2Plot = unwrap(obj.Th2Data);
+            th2Plot = unwrap(obj.Th1Data) + unwrap(obj.Th2Data);
             w1Plot = obj.W1Data;
             w2Plot = obj.W2Data;
             if strcmpi(obj.AngleUnit, 'degree')
