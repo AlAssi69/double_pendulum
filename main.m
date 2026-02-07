@@ -43,7 +43,7 @@ sim.setState(app.InitialState, 0);
 
 if config.Debug
     debugPrintConfig(app, model, ctrl);
-    debugPrintSimSetup(sim, app.TimeSpan);
+    debugPrintSimSetup(app);
 end
 sim.run(app.TimeSpan);
 debugPrintEnd(sim, config.Debug, config.Visual);
@@ -65,6 +65,7 @@ function debugPrintConfig(app, model, ctrl)
     fprintf('    [ %.6g, %.6g, %.6g, %.6g ] rad, rad, rad/s, rad/s\n', ...
         app.InitialState(1), app.InitialState(2), app.InitialState(3), app.InitialState(4));
     fprintf('  Time span: [ %.4g, %.4g ] s\n', app.TimeSpan(1), app.TimeSpan(2));
+    fprintf('  Solver: %s   Step size dt = %.6g s\n', app.SolverType, app.StepSize);
     fprintf('  Control: %s\n', iif(app.EnableControl, 'LQR ON', 'OFF (null)'));
     if app.EnableControl
         fprintf('  LQR weights: Q = diag(...)  R = %.4g\n', app.R);
@@ -73,13 +74,21 @@ function debugPrintConfig(app, model, ctrl)
     fprintf('------------------------------------------------------------------------\n\n');
 end
 
-function debugPrintSimSetup(sim, timeSpan)
+function debugPrintSimSetup(app)
+    % Print the exact config values used for the run (from GUI / app).
     fprintf('========================================================================\n');
     fprintf('  SIMULATION SETUP\n');
     fprintf('========================================================================\n');
-    fprintf('  Solver: %s   Step size dt = %.6g s\n', sim.SolverType, sim.StepSize);
-    fprintf('  Run: t = %.4g -> %.4g s   (approx %.0f steps)\n', ...
-        timeSpan(1), timeSpan(end), (timeSpan(end) - timeSpan(1)) / sim.StepSize);
+    fprintf('  Solver: %s   Step size dt = %.6g s\n', app.SolverType, app.StepSize);
+    t0 = app.TimeSpan(1);
+    tEnd = app.TimeSpan(end);
+    fprintf('  Run: t = %.4g -> %.4g s', t0, tEnd);
+    if app.StepSize > 0 && numel(app.TimeSpan) >= 2
+        nSteps = (tEnd - t0) / app.StepSize;
+        fprintf('   (approx %.0f steps)\n', nSteps);
+    else
+        fprintf('\n');
+    end
     fprintf('------------------------------------------------------------------------\n\n');
 end
 

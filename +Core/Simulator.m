@@ -16,7 +16,7 @@ classdef Simulator < handle
 
     properties (Access = private)
         Observers   = {}   % cell of listeners / callback handles
-        Solver_     (1,1) Integration.ISolver  % integration engine (created from SolverType)
+        Solver_     (1,1) Integration.ISolver = Integration.RK4Solver()  % integration engine (created from SolverType)
     end
 
     methods

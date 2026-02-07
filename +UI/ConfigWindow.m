@@ -16,6 +16,14 @@ classdef ConfigWindow < handle
         Fig    % uifigure handle; use waitfor(app.Fig) to block until window closes
     end
 
+    properties (Access = private)
+        SolverDropdown   % uidropdown handle – read on Start
+        StepSizeEdit     % uieditfield handle – read on Start
+        TimeSpanEdit     % uieditfield handle – read on Start
+        ParamEdits       % struct with fields m1, m2, L1, L2 – read on Start
+        StateEdits       % struct with fields th1, th2 – read on Start
+    end
+
     methods
         function obj = ConfigWindow(config)
             if nargin < 1, config = Utils.ConfigLoader.loadDefault(); end
@@ -31,40 +39,44 @@ classdef ConfigWindow < handle
             obj.Fig = uifigure('Name', 'Double Pendulum Config', 'Position', [100 100 380 480]);
             y = 440;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'm1');
-            obj.addEdit(140, y, num2str(obj.Params.m1), @(v) setP(obj, 'm1', v));
+            obj.ParamEdits.m1 = obj.addEditWithHandle(140, y, num2str(obj.Params.m1), @(v) setP(obj, 'm1', v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'm2');
-            obj.addEdit(140, y, num2str(obj.Params.m2), @(v) setP(obj, 'm2', v));
+            obj.ParamEdits.m2 = obj.addEditWithHandle(140, y, num2str(obj.Params.m2), @(v) setP(obj, 'm2', v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'L1');
-            obj.addEdit(140, y, num2str(obj.Params.L1), @(v) setP(obj, 'L1', v));
+            obj.ParamEdits.L1 = obj.addEditWithHandle(140, y, num2str(obj.Params.L1), @(v) setP(obj, 'L1', v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'L2');
-            obj.addEdit(140, y, num2str(obj.Params.L2), @(v) setP(obj, 'L2', v));
+            obj.ParamEdits.L2 = obj.addEditWithHandle(140, y, num2str(obj.Params.L2), @(v) setP(obj, 'L2', v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ1');
-            obj.addEdit(140, y, num2str(obj.InitialState(1)), @(v) setState(obj, 1, v));
+            obj.StateEdits.th1 = obj.addEditWithHandle(140, y, num2str(obj.InitialState(1)), @(v) setState(obj, 1, v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ2');
-            obj.addEdit(140, y, num2str(obj.InitialState(2)), @(v) setState(obj, 2, v));
+            obj.StateEdits.th2 = obj.addEditWithHandle(140, y, num2str(obj.InitialState(2)), @(v) setState(obj, 2, v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Time span [t0 tEnd]');
-            obj.addEdit(140, y, mat2str(obj.TimeSpan), @(v) setTS(obj, v));
+            obj.TimeSpanEdit = obj.addEditWithHandle(140, y, mat2str(obj.TimeSpan), @(v) setTS(obj, v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Solver');
-            obj.addSolverDropdown(140, y);
+            obj.SolverDropdown = obj.addSolverDropdown(140, y);
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Step size dt');
-            obj.addEdit(140, y, num2str(obj.StepSize), @(v) setStepSize(obj, v));
+            obj.StepSizeEdit = obj.addEditWithHandle(140, y, num2str(obj.StepSize), @(v) setStepSize(obj, v));
             y = y - 32;
             obj.addCheckbox(20, y, 'Enable LQR control', obj.EnableControl, @(v) set(obj, 'EnableControl', v));
             y = y - 36;
             uibutton(obj.Fig, 'Position', [120 y 140 32], 'Text', 'Start', 'ButtonPushedFcn', @(~,~) obj.doClose());
         end
 
-        function addEdit(obj, x, y, val, setter)
+        function h = addEdit(obj, x, y, val, setter)
             h = uieditfield(obj.Fig, 'text', 'Position', [x y 100 22], 'Value', val);
             addlistener(h, 'ValueChanged', @(src,~) obj.editCallback(setter, src));
+        end
+
+        function h = addEditWithHandle(obj, x, y, val, setter)
+            h = obj.addEdit(x, y, val, setter);
         end
 
         function editCallback(obj, setter, src)
@@ -93,10 +105,14 @@ classdef ConfigWindow < handle
             if numel(ts) >= 2, obj.TimeSpan = [ts(1) ts(2)]; end
         end
 
-        function addSolverDropdown(obj, x, y)
+        function h = addSolverDropdown(obj, x, y)
             items = ["euler", "rk4", "ode45"];
-            uidropdown(obj.Fig, 'Position', [x y 100 22], 'Items', items, ...
-                'Value', obj.SolverType, 'ValueChangedFcn', @(src,~) set(obj, 'SolverType', string(src.Value)));
+            h = uidropdown(obj.Fig, 'Position', [x y 100 22], 'Items', items, ...
+                'Value', obj.SolverType, 'ValueChangedFcn', @(src,~) obj.assignSolverType(src.Value));
+        end
+
+        function assignSolverType(obj, val)
+            obj.SolverType = string(val);
         end
 
         function setStepSize(obj, v)
@@ -104,6 +120,24 @@ classdef ConfigWindow < handle
         end
 
         function doClose(obj)
+            % Read current GUI values into properties before figure is destroyed (so main gets selection)
+            obj.SolverType = string(obj.SolverDropdown.Value);
+            stepVal = str2double(obj.StepSizeEdit.Value);
+            if ~isnan(stepVal) && stepVal > 0
+                obj.StepSize = stepVal;
+            end
+            ts = str2num(obj.TimeSpanEdit.Value);
+            if numel(ts) >= 2
+                obj.TimeSpan = [ts(1) ts(2)];
+            end
+            for fn = {'m1', 'm2', 'L1', 'L2'}
+                v = str2double(obj.ParamEdits.(fn{1}).Value);
+                if ~isnan(v), obj.Params.(fn{1}) = v; end
+            end
+            v1 = str2double(obj.StateEdits.th1.Value);
+            if ~isnan(v1), obj.InitialState(1) = v1; end
+            v2 = str2double(obj.StateEdits.th2.Value);
+            if ~isnan(v2), obj.InitialState(2) = v2; end
             delete(obj.Fig);
         end
     end
