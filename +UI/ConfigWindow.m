@@ -23,6 +23,7 @@ classdef ConfigWindow < handle
         TimeSpanEdit     % uieditfield handle – read on Start
         ParamEdits       % struct with fields m1, m2, L1, L2 – read on Start
         StateEdits       % struct with fields th1, th2 – read on Start
+        StateLabels      % struct with th1, th2 – uilabel handles for angle unit
         AngleUnitDropdown   % uidropdown – read on Start
     end
 
@@ -54,12 +55,12 @@ classdef ConfigWindow < handle
             obj.ParamEdits.L2 = obj.addEditWithHandle(140, y, num2str(obj.Params.L2), @(v) setP(obj, 'L2', v));
             y = y - 28;
             % θ1, θ2 = angles from vertical (both absolute); stored as state(1), state(2)=θ2_rel=θ2_abs−θ1
-            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ1 (rad, from vertical)');
-            obj.StateEdits.th1 = obj.addEditWithHandle(140, y, num2str(obj.InitialState(1)), @(v) setState(obj, 1, v));
+            obj.StateLabels.th1 = uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ1 (rad, from vertical)');
+            obj.StateEdits.th1 = obj.addEditWithHandle(140, y, num2str(obj.angleToDisplay(obj.InitialState(1))), @(v) setState(obj, 1, v));
             y = y - 28;
-            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ2 (rad, from vertical)');
             th2Abs = obj.InitialState(1) + obj.InitialState(2);  % display absolute second angle
-            obj.StateEdits.th2 = obj.addEditWithHandle(140, y, num2str(th2Abs), @(v) setState(obj, 2, v));
+            obj.StateLabels.th2 = uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ2 (rad, from vertical)');
+            obj.StateEdits.th2 = obj.addEditWithHandle(140, y, num2str(obj.angleToDisplay(th2Abs)), @(v) setState(obj, 2, v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Time span [t0 tEnd]');
             obj.TimeSpanEdit = obj.addEditWithHandle(140, y, mat2str(obj.TimeSpan), @(v) setTS(obj, v));
@@ -74,6 +75,7 @@ classdef ConfigWindow < handle
             obj.AngleUnitDropdown = uidropdown(obj.Fig, 'Position', [140 y 100 22], ...
                 'Items', ["radian", "degree"], 'Value', obj.AngleUnit, ...
                 'ValueChangedFcn', @(src,~) obj.setAngleUnit(string(src.Value)));
+            obj.refreshStateDisplay();   % sync labels and state edits to AngleUnit
             y = y - 32;
             obj.addCheckbox(20, y, 'Enable LQR control', obj.EnableControl, @(v) obj.setEnableControl(v));
             y = y - 36;
@@ -107,13 +109,14 @@ classdef ConfigWindow < handle
 
         function setState(obj, i, v)
             if isnan(v), return; end
+            vRad = obj.angleFromDisplay(v);
             if i == 1
-                obj.InitialState(1) = v;
+                obj.InitialState(1) = vRad;
                 % Keep θ2 display as absolute: θ2_abs = θ1 + θ2_rel
-                obj.StateEdits.th2.Value = num2str(v + obj.InitialState(2));
+                obj.StateEdits.th2.Value = num2str(obj.angleToDisplay(vRad + obj.InitialState(2)));
             else
                 % v = θ2 from vertical (absolute) → θ2_rel = v − θ1
-                obj.InitialState(2) = v - obj.InitialState(1);
+                obj.InitialState(2) = vRad - obj.InitialState(1);
             end
         end
 
@@ -134,6 +137,7 @@ classdef ConfigWindow < handle
 
         function setAngleUnit(obj, val)
             obj.AngleUnit = val;
+            obj.refreshStateDisplay();
         end
 
         function setEnableControl(obj, v)
@@ -142,6 +146,38 @@ classdef ConfigWindow < handle
 
         function setStepSize(obj, v)
             if ~isnan(v) && v > 0, obj.StepSize = v; end
+        end
+
+        function d = angleToDisplay(obj, rad)
+            % Convert internal angle (rad) to the value shown in the GUI.
+            if strcmpi(obj.AngleUnit, 'degree')
+                d = rad * 180 / pi;
+            else
+                d = rad;
+            end
+        end
+
+        function r = angleFromDisplay(obj, displayVal)
+            % Convert GUI value to internal angle (rad).
+            if strcmpi(obj.AngleUnit, 'degree')
+                r = displayVal * pi / 180;
+            else
+                r = displayVal;
+            end
+        end
+
+        function refreshStateDisplay(obj)
+            % Update state edit fields and labels to current AngleUnit (InitialState always in rad).
+            if strcmpi(obj.AngleUnit, 'degree')
+                obj.StateLabels.th1.Text = 'Initial θ1 (°, from vertical)';
+                obj.StateLabels.th2.Text = 'Initial θ2 (°, from vertical)';
+            else
+                obj.StateLabels.th1.Text = 'Initial θ1 (rad, from vertical)';
+                obj.StateLabels.th2.Text = 'Initial θ2 (rad, from vertical)';
+            end
+            obj.StateEdits.th1.Value = num2str(obj.angleToDisplay(obj.InitialState(1)));
+            th2Abs = obj.InitialState(1) + obj.InitialState(2);
+            obj.StateEdits.th2.Value = num2str(obj.angleToDisplay(th2Abs));
         end
 
         function doClose(obj)
@@ -160,11 +196,11 @@ classdef ConfigWindow < handle
                 v = str2double(obj.ParamEdits.(fn{1}).Value);
                 if ~isnan(v), obj.Params.(fn{1}) = v; end
             end
-            % Both fields are angles from vertical (absolute); store θ2 as relative for dynamics
+            % Both fields are angles from vertical (absolute), in current display unit; convert to rad for dynamics
             v1 = str2double(obj.StateEdits.th1.Value);
             v2 = str2double(obj.StateEdits.th2.Value);
-            if ~isnan(v1), obj.InitialState(1) = v1; end
-            if ~isnan(v2), obj.InitialState(2) = v2 - obj.InitialState(1); end
+            if ~isnan(v1), obj.InitialState(1) = obj.angleFromDisplay(v1); end
+            if ~isnan(v2), obj.InitialState(2) = obj.angleFromDisplay(v2) - obj.InitialState(1); end
             delete(obj.Fig);
         end
     end
