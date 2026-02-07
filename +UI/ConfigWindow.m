@@ -73,9 +73,9 @@ classdef ConfigWindow < handle
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Angle unit');
             obj.AngleUnitDropdown = uidropdown(obj.Fig, 'Position', [140 y 100 22], ...
                 'Items', ["radian", "degree"], 'Value', obj.AngleUnit, ...
-                'ValueChangedFcn', @(src,~) set(obj, 'AngleUnit', string(src.Value)));
+                'ValueChangedFcn', @(src,~) obj.setAngleUnit(string(src.Value)));
             y = y - 32;
-            obj.addCheckbox(20, y, 'Enable LQR control', obj.EnableControl, @(v) set(obj, 'EnableControl', v));
+            obj.addCheckbox(20, y, 'Enable LQR control', obj.EnableControl, @(v) obj.setEnableControl(v));
             y = y - 36;
             uibutton(obj.Fig, 'Position', [120 y 140 32], 'Text', 'Start', 'ButtonPushedFcn', @(~,~) obj.doClose());
         end
@@ -130,6 +130,14 @@ classdef ConfigWindow < handle
 
         function assignSolverType(obj, val)
             obj.SolverType = string(val);
+        end
+
+        function setAngleUnit(obj, val)
+            obj.AngleUnit = val;
+        end
+
+        function setEnableControl(obj, v)
+            obj.EnableControl = v;
         end
 
         function setStepSize(obj, v)
