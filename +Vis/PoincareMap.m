@@ -122,7 +122,7 @@ classdef PoincareMap < handle
             end
         end
 
-        function v = getVar(~, state, name)
+        function v = getVar(obj, state, name)
             idx = obj.varIndex(name);
             v = state(idx);
         end
