@@ -11,7 +11,9 @@ classdef ConfigLoader
 
             % --- Run / UI flags ---
             config.Debug  = true;   % Print config, setup, and full end summary to command window
-            config.Visual = true;   % Show figures (animator, state plot, Poincaré map)
+            config.Visual = true;   % If true: after simulation, show smooth playback; if false: no visuals
+            config.ResultsDir = 'results';   % Folder where simulation time series are saved
+            config.PlaybackFps = 30;         % Frame rate for smooth playback when Visual is on
 
             % --- Random number generator ---
             config.RngSeed = 0;     % Set for reproducible runs (use [] to leave RNG unchanged)

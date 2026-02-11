@@ -23,22 +23,13 @@ else
     ctrl = Control.NullController();
 end
 
-% 4. Visualization (only when config.Visual is on)
-if config.Visual
-    vizManager = Vis.VisualizerManager();
-    vizManager.add(Vis.PendulumAnimator(app.AngleUnit, model.L1 + model.L2));
-    vizManager.add(Vis.StatePlotter(app.AngleUnit));
-    vizManager.add(Vis.PoincareMap('XVar', config.PoincareXVar, 'YVar', config.PoincareYVar, 'AngleUnit', app.AngleUnit));
-end
-
-% 5. Simulator and run (solver and step size from config GUI)
+% 4. Simulator: run without visualization (recorder only) for speed
+recorder = Core.SimulationRecorder();
 sim = Core.Simulator(model, ctrl);
 sim.StepSize = app.StepSize;
 sim.SolverType = app.SolverType;
 sim.Debug = config.Debug;
-if config.Visual
-    sim.attachObserver(vizManager);
-end
+sim.attachObserver(recorder);
 sim.setState(app.InitialState, 0);
 
 if config.Debug
@@ -47,6 +38,27 @@ if config.Debug
 end
 sim.run(app.TimeSpan);
 debugPrintEnd(sim, config.Debug, config.Visual);
+
+% 5. Save time series to results folder
+results = recorder.getResults();
+results.params = app.Params;
+results.timeSpan = app.TimeSpan;
+results.stepSize = app.StepSize;
+results.angleUnit = app.AngleUnit;
+results.poincareXVar = config.PoincareXVar;
+results.poincareYVar = config.PoincareYVar;
+results.initialState = app.InitialState;
+results.solverType = app.SolverType;
+results.enableControl = app.EnableControl;
+savedPath = saveResults(results, config.ResultsDir);
+if config.Debug && ~isempty(savedPath)
+    fprintf('  Results saved: %s\n', savedPath);
+end
+
+% 6. Optional: smooth playback (only when config.Visual is on)
+if config.Visual && numel(results.t) > 0
+    runSmoothPlayback(results, config);
+end
 
 %% -------------------------------------------------------------------------
 %% Debug / summary print helpers
@@ -116,3 +128,19 @@ end
 function out = iif(cond, a, b)
     if cond, out = a; else, out = b; end
 end
+
+%% -------------------------------------------------------------------------
+%% Save / load and playback
+%% -------------------------------------------------------------------------
+function pathOut = saveResults(results, resultsDir)
+    % saveResults(results, resultsDir)  Save time series to resultsDir; return path or ''.
+    if isempty(resultsDir), pathOut = ''; return; end
+    if ~isfolder(resultsDir)
+        mkdir(resultsDir);
+    end
+    stamp = datestr(now, 'yyyymmdd_HHMMSS');
+    fname = fullfile(resultsDir, ['double_pendulum_', stamp, '.mat']);
+    save(fname, '-struct', 'results', '-v7.3');
+    pathOut = fname;
+end
+

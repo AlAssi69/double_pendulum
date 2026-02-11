@@ -44,6 +44,14 @@ The project is organized into MATLAB packages (`+folder`) to enforce namespace s
 * **Key Properties:** `CurrentState`, `Time`, `SolverType` ("euler" \| "rk4" \| "ode45"), `StepSize`, `Debug` (when true, prints solver and step size once at run start).
 * **Key Methods:** `step(dt, u)`, `run(timeSpan)`.
 
+**`Core.SimulationRecorder`**
+
+* **Role:** Observer that records time, state, and control each step (no graphics). Use `getResults()` after `run()` to obtain the time series for saving or playback.
+
+**`Core.PlaybackSim`**
+
+* **Role:** Mock simulator for smooth playback from saved or in-memory data. Exposes `Time`, `CurrentState` (interpolated), `Model`, and `Controller` so existing visualizers can drive from recorded data.
+
 **`Integration` package**
 
 * **Role:** Pluggable ODE solvers. `ISolver` defines the interface; `EulerSolver`, `RK4Solver`, `ODE45Solver` implement it. Use `Integration.SolverFactory.getSolver(name)` to obtain a solver; the Simulator uses this to advance state each step.
@@ -59,6 +67,10 @@ The project is organized into MATLAB packages (`+folder`) to enforce namespace s
 
 * **Role:** Implements the Linear-Quadratic Regulator.
 * **Logic:** Computes gain matrix  based on linearized dynamics and computes .
+
+**`Control.PlaybackController < Control.IController`**
+
+* **Role:** Returns control `u` interpolated at the current time from a recorded series. Used by `PlaybackSim` for smooth visualization from saved results.
 
 ### C. The Visualization Layer (`+Vis`)
 
@@ -137,17 +149,19 @@ if config.Visual
     vizManager.add(Vis.PoincareMap('XVar', config.PoincareXVar, 'YVar', config.PoincareYVar));
 end
 
-% 6. Run Simulation (solver and step size from app; debug from config)
+% 6. Run Simulation (no live visualization; recorder only for speed)
+recorder = Core.SimulationRecorder();
 sim = Core.Simulator(model, ctrl);
-sim.StepSize = app.StepSize;
-sim.SolverType = app.SolverType;
-sim.Debug = config.Debug;
-if config.Visual, sim.attachObserver(vizManager); end
-sim.setState(app.InitialState, 0);
-if config.Debug, debugPrintConfig(app, model, ctrl); debugPrintSimSetup(sim, app.TimeSpan); end
+sim.attachObserver(recorder);
 sim.run(app.TimeSpan);
 
+% 7. Save time series to config.ResultsDir (e.g. results/double_pendulum_YYYYMMDD_HHMMSS.mat)
+% 8. If config.Visual: smooth playback at config.PlaybackFps (e.g. 30 fps)
 ```
+
+**Run without visualization:** Set `config.Visual = false` in `Utils.ConfigLoader.loadDefault()` to skip playback entirely (simulation still runs and results are saved).
+
+**Load and visualize later:** Run `playback_saved.m` to load the most recent saved run from the `results` folder and play it back at the configured frame rate.
 
 ---
 
