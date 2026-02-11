@@ -155,11 +155,11 @@ sim.run(app.TimeSpan);
 
 ### 1. Real-time Animator
 
-* **Style:** Dark mode background with neon aesthetics.
-* **Link 1:** Cyan thick line.
-* **Link 2:** Magenta thick line.
-* **Masses:** Filled markers with "glow" effect.
-* **Trace:** Fading tail showing the trajectory of mass 2.
+* **Style:** White background with clean, high-contrast aesthetics.
+* **Link 1:** Red thick line.
+* **Link 2:** Blue thick line.
+* **Masses:** Filled circular markers (red and blue) with black edge outlines.
+* **Trace:** Blue semi-transparent tail showing the trajectory of mass 2.
 
 ### 2. Poincaré Map
 

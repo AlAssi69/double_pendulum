@@ -15,9 +15,12 @@ classdef PendulumAnimator < handle
     end
 
     methods
-        function obj = PendulumAnimator(angleUnit)
+        function obj = PendulumAnimator(angleUnit, totalReach)
             if nargin >= 1 && ~isempty(angleUnit)
                 obj.AngleUnit = string(angleUnit);
+            end
+            if nargin < 2 || isempty(totalReach)
+                totalReach = 2.0;  % fallback for L1=L2=1
             end
             obj.Fig = figure('Color', [1 1 1], 'Name', 'Double Pendulum', 'Position', [40, 320, 420, 420]);
             obj.Ax = axes(obj.Fig, 'Position', [0.05 0.05 0.9 0.9], 'Color', [1 1 1], ...
@@ -30,12 +33,13 @@ classdef PendulumAnimator < handle
             obj.Line2 = plot(obj.Ax, [0 0], [0 0], 'Color', [0 0 1], 'LineWidth', 4);
             obj.Mass1 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [1 0 0], 'MarkerEdgeColor', [0 0 0], 'LineWidth', 1.5);
             obj.Mass2 = plot(obj.Ax, 0, 0, 'o', 'MarkerSize', 12, 'MarkerFaceColor', [0 0 1], 'MarkerEdgeColor', [0 0 0], 'LineWidth', 1.5);
-            L = 2.2;
+            L = totalReach * 1.1;  % scale to model with 10% margin
             xlim(obj.Ax, [-L L]);
             ylim(obj.Ax, [-L L]);
         end
 
         function update(obj, sim)
+            if ~isvalid(obj.Fig), return; end
             state = sim.CurrentState;
             model = sim.Model;
             L1 = model.L1;

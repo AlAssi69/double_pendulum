@@ -8,13 +8,17 @@ classdef Simulator < handle
         Controller  (1,1) Control.IController = Control.NullController()
         CurrentState (4,1) double = [0; 0; 0; 0]
         Time        (1,1) double = 0
-        SolverType  (1,1) string = "rk4"   % "euler" | "rk4" | "ode45"
         StepSize    (1,1) double = 0.02    % fixed step for run() and fixed-step solvers
         StepCount   (1,1) double = 0       % total steps in last run (for debugging)
         Debug       (1,1) logical = false  % if true, print solver info once at run start
     end
 
+    properties (Dependent)
+        SolverType  (1,1) string   % "euler" | "rk4" | "ode45"
+    end
+
     properties (Access = private)
+        SolverType_ (1,1) string = "rk4"   % backing store for SolverType
         Observers   = {}   % cell of listeners / callback handles
         Solver_     (1,1) Integration.ISolver = Integration.RK4Solver()  % integration engine (created from SolverType)
     end
@@ -26,7 +30,12 @@ classdef Simulator < handle
             obj.Solver_ = Integration.SolverFactory.getSolver(obj.SolverType);
         end
 
+        function val = get.SolverType(obj)
+            val = obj.SolverType_;
+        end
+
         function set.SolverType(obj, name)
+            obj.SolverType_ = name;
             obj.Solver_ = Integration.SolverFactory.getSolver(name);
         end
 

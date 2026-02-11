@@ -21,9 +21,9 @@ classdef ConfigWindow < handle
         SolverDropdown   % uidropdown handle – read on Start
         StepSizeEdit     % uieditfield handle – read on Start
         TimeSpanEdit     % uieditfield handle – read on Start
-        ParamEdits       % struct with fields m1, m2, L1, L2 – read on Start
-        StateEdits       % struct with fields th1, th2 – read on Start
-        StateLabels      % struct with th1, th2 – uilabel handles for angle unit
+        ParamEdits       % struct with fields m1, m2, L1, L2, g, beta1, beta2 – read on Start
+        StateEdits       % struct with fields th1, th2, w1, w2 – read on Start
+        StateLabels      % struct with th1, th2, w1, w2 – uilabel handles for angle unit
         AngleUnitDropdown   % uidropdown – read on Start
     end
 
@@ -40,8 +40,8 @@ classdef ConfigWindow < handle
             obj.R = config.R;
             if isfield(config, 'AngleUnit'), obj.AngleUnit = string(config.AngleUnit); end
 
-            obj.Fig = uifigure('Name', 'Double Pendulum Config', 'Position', [100 100 380 520]);
-            y = 440;
+            obj.Fig = uifigure('Name', 'Double Pendulum Config', 'Position', [100 100 380 660]);
+            y = 580;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'm1');
             obj.ParamEdits.m1 = obj.addEditWithHandle(140, y, num2str(obj.Params.m1), @(v) setP(obj, 'm1', v));
             y = y - 28;
@@ -54,6 +54,15 @@ classdef ConfigWindow < handle
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'L2');
             obj.ParamEdits.L2 = obj.addEditWithHandle(140, y, num2str(obj.Params.L2), @(v) setP(obj, 'L2', v));
             y = y - 28;
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'g (gravity)');
+            obj.ParamEdits.g = obj.addEditWithHandle(140, y, num2str(obj.Params.g), @(v) setP(obj, 'g', v));
+            y = y - 28;
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'beta1 (damping)');
+            obj.ParamEdits.beta1 = obj.addEditWithHandle(140, y, num2str(obj.Params.beta1), @(v) setP(obj, 'beta1', v));
+            y = y - 28;
+            uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'beta2 (damping)');
+            obj.ParamEdits.beta2 = obj.addEditWithHandle(140, y, num2str(obj.Params.beta2), @(v) setP(obj, 'beta2', v));
+            y = y - 28;
             % θ1, θ2 = angles from vertical (both absolute); stored as state(1), state(2)=θ2_rel=θ2_abs−θ1
             obj.StateLabels.th1 = uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ1 (rad, from vertical)');
             obj.StateEdits.th1 = obj.addEditWithHandle(140, y, num2str(obj.angleToDisplay(obj.InitialState(1))), @(v) setState(obj, 1, v));
@@ -61,6 +70,12 @@ classdef ConfigWindow < handle
             th2Abs = obj.InitialState(1) + obj.InitialState(2);  % display absolute second angle
             obj.StateLabels.th2 = uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial θ2 (rad, from vertical)');
             obj.StateEdits.th2 = obj.addEditWithHandle(140, y, num2str(obj.angleToDisplay(th2Abs)), @(v) setState(obj, 2, v));
+            y = y - 28;
+            obj.StateLabels.w1 = uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial ω1 (rad/s)');
+            obj.StateEdits.w1 = obj.addEditWithHandle(140, y, num2str(obj.velToDisplay(obj.InitialState(3))), @(v) setVelState(obj, 3, v));
+            y = y - 28;
+            obj.StateLabels.w2 = uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Initial ω2 (rad/s)');
+            obj.StateEdits.w2 = obj.addEditWithHandle(140, y, num2str(obj.velToDisplay(obj.InitialState(4))), @(v) setVelState(obj, 4, v));
             y = y - 28;
             uilabel(obj.Fig, 'Position', [20 y 120 22], 'Text', 'Time span [t0 tEnd]');
             obj.TimeSpanEdit = obj.addEditWithHandle(140, y, mat2str(obj.TimeSpan), @(v) setTS(obj, v));
@@ -82,6 +97,9 @@ classdef ConfigWindow < handle
             uibutton(obj.Fig, 'Position', [120 y 140 32], 'Text', 'Start', 'ButtonPushedFcn', @(~,~) obj.doClose());
         end
 
+    end
+
+    methods (Access = private)
         function h = addEdit(obj, x, y, val, setter)
             h = uieditfield(obj.Fig, 'text', 'Position', [x y 100 22], 'Value', val);
             addlistener(h, 'ValueChanged', @(src,~) obj.editCallback(setter, src));
@@ -120,8 +138,13 @@ classdef ConfigWindow < handle
             end
         end
 
+        function setVelState(obj, i, v)
+            if isnan(v), return; end
+            obj.InitialState(i) = obj.velFromDisplay(v);
+        end
+
         function setTS(obj, v)
-            ts = str2num(v);
+            ts = sscanf(v, '%f', [1 2]);
             if numel(ts) >= 2, obj.TimeSpan = [ts(1) ts(2)]; end
         end
 
@@ -166,18 +189,42 @@ classdef ConfigWindow < handle
             end
         end
 
+        function d = velToDisplay(obj, radPerSec)
+            % Convert internal angular velocity (rad/s) to display unit.
+            if strcmpi(obj.AngleUnit, 'degree')
+                d = radPerSec * 180 / pi;
+            else
+                d = radPerSec;
+            end
+        end
+
+        function r = velFromDisplay(obj, displayVal)
+            % Convert GUI angular velocity to internal (rad/s).
+            if strcmpi(obj.AngleUnit, 'degree')
+                r = displayVal * pi / 180;
+            else
+                r = displayVal;
+            end
+        end
+
         function refreshStateDisplay(obj)
             % Update state edit fields and labels to current AngleUnit (InitialState always in rad).
             if strcmpi(obj.AngleUnit, 'degree')
                 obj.StateLabels.th1.Text = 'Initial θ1 (°, from vertical)';
                 obj.StateLabels.th2.Text = 'Initial θ2 (°, from vertical)';
+                obj.StateLabels.w1.Text = 'Initial ω1 (°/s)';
+                obj.StateLabels.w2.Text = 'Initial ω2 (°/s)';
             else
                 obj.StateLabels.th1.Text = 'Initial θ1 (rad, from vertical)';
                 obj.StateLabels.th2.Text = 'Initial θ2 (rad, from vertical)';
+                obj.StateLabels.w1.Text = 'Initial ω1 (rad/s)';
+                obj.StateLabels.w2.Text = 'Initial ω2 (rad/s)';
             end
             obj.StateEdits.th1.Value = num2str(obj.angleToDisplay(obj.InitialState(1)));
             th2Abs = obj.InitialState(1) + obj.InitialState(2);
             obj.StateEdits.th2.Value = num2str(obj.angleToDisplay(th2Abs));
+            obj.StateEdits.w1.Value = num2str(obj.velToDisplay(obj.InitialState(3)));
+            obj.StateEdits.w2.Value = num2str(obj.velToDisplay(obj.InitialState(4)));
         end
 
         function doClose(obj)
@@ -188,11 +235,11 @@ classdef ConfigWindow < handle
             if ~isnan(stepVal) && stepVal > 0
                 obj.StepSize = stepVal;
             end
-            ts = str2num(obj.TimeSpanEdit.Value);
+            ts = sscanf(obj.TimeSpanEdit.Value, '%f', [1 2]);
             if numel(ts) >= 2
                 obj.TimeSpan = [ts(1) ts(2)];
             end
-            for fn = {'m1', 'm2', 'L1', 'L2'}
+            for fn = {'m1', 'm2', 'L1', 'L2', 'g', 'beta1', 'beta2'}
                 v = str2double(obj.ParamEdits.(fn{1}).Value);
                 if ~isnan(v), obj.Params.(fn{1}) = v; end
             end
@@ -201,6 +248,11 @@ classdef ConfigWindow < handle
             v2 = str2double(obj.StateEdits.th2.Value);
             if ~isnan(v1), obj.InitialState(1) = obj.angleFromDisplay(v1); end
             if ~isnan(v2), obj.InitialState(2) = obj.angleFromDisplay(v2) - obj.InitialState(1); end
+            % Read initial angular velocities
+            vw1 = str2double(obj.StateEdits.w1.Value);
+            vw2 = str2double(obj.StateEdits.w2.Value);
+            if ~isnan(vw1), obj.InitialState(3) = obj.velFromDisplay(vw1); end
+            if ~isnan(vw2), obj.InitialState(4) = obj.velFromDisplay(vw2); end
             delete(obj.Fig);
         end
     end

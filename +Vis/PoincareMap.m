@@ -13,6 +13,7 @@ classdef PoincareMap < handle
         Scatter    % points colored by time (gradient)
         StateHistory = []   % Nx4
         TimeHistory = []    % Nx1
+        MaxPoints = 5000    % cap history length for performance
         DropdownX
         DropdownY
         AngleUnit (1,1) string = "radian"
@@ -40,10 +41,14 @@ classdef PoincareMap < handle
             % Scatter for gradient color by time (red = start, blue = end)
             obj.Scatter = scatter(obj.Ax, NaN, NaN, 8, 0.5, 'filled');
             obj.updateAxisLabels();
+            xIdx = find(vars == obj.XVar, 1);
+            if isempty(xIdx), xIdx = 1; end
+            yIdx = find(vars == obj.YVar, 1);
+            if isempty(yIdx), yIdx = 2; end
             uicontrol(obj.Fig, 'Style', 'text', 'String', 'X:', 'Units', 'normalized', 'Position', [0.02 0.05 0.04 0.04]);
-            obj.DropdownX = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', 1, 'Units', 'normalized', 'Position', [0.07 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(1));
+            obj.DropdownX = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', xIdx, 'Units', 'normalized', 'Position', [0.07 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(1));
             uicontrol(obj.Fig, 'Style', 'text', 'String', 'Y:', 'Units', 'normalized', 'Position', [0.22 0.05 0.04 0.04]);
-            obj.DropdownY = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', 2, 'Units', 'normalized', 'Position', [0.27 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(2));
+            obj.DropdownY = uicontrol(obj.Fig, 'Style', 'popup', 'String', vars, 'Value', yIdx, 'Units', 'normalized', 'Position', [0.27 0.04 0.12 0.06], 'Callback', @(~,~) obj.syncAxis(2));
         end
 
         function updateAxisLabels(obj)
@@ -72,9 +77,16 @@ classdef PoincareMap < handle
         end
 
         function update(obj, sim)
+            if ~isvalid(obj.Fig), return; end
             state = sim.CurrentState(:)';
             obj.StateHistory = [obj.StateHistory; state];
             obj.TimeHistory = [obj.TimeHistory; sim.Time];
+            % Cap history length for performance
+            if size(obj.StateHistory, 1) > obj.MaxPoints
+                excess = size(obj.StateHistory, 1) - obj.MaxPoints;
+                obj.StateHistory = obj.StateHistory(excess+1:end, :);
+                obj.TimeHistory = obj.TimeHistory(excess+1:end);
+            end
             [xd, yd] = obj.xyFromHistory();
             set(obj.LinePlot, 'XData', xd, 'YData', yd);
             set(obj.Scatter, 'XData', xd, 'YData', yd, 'CData', obj.timeColor());
@@ -123,6 +135,7 @@ classdef PoincareMap < handle
         end
 
         function v = getVar(obj, state, name)
+            % getVar  Extract a single variable from a state vector by name.
             idx = obj.varIndex(name);
             v = state(idx);
         end

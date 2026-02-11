@@ -60,7 +60,7 @@ classdef DoublePendulumModel < handle
             % Coriolis/centrifugal (from d/dt of partial L/partial theta_dot)
             s2 = sin(th2);
             C1 = 2*m2*L1*L2*s2*w2*w1 + m2*L1*L2*s2*w2^2;
-            C2 = m2*L1*L2*s2*w1^2;
+            C2 = -m2*L1*L2*s2*w1^2;
 
             % Gravity
             G1 = -g*L1*(m1 + m2)*sin(th1) - m2*g*L2*sin(th1 + th2);

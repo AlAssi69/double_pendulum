@@ -6,12 +6,18 @@ classdef StatePlotter < handle
         AxTh
         AxVel
         AxU
+        LineTh1    % line handle for theta1
+        LineTh2    % line handle for theta2
+        LineW1     % line handle for omega1
+        LineW2     % line handle for omega2
+        LineU      % line handle for control input
         TData = []
-        Th1Data = []   % raw rad, unwrapped for display
-        Th2Data = []
+        Th1Unwrapped = []   % pre-unwrapped theta1 for display
+        Th2Unwrapped = []   % pre-unwrapped theta2_rel for display
         W1Data = []
         W2Data = []
         UData = []
+        MaxPoints = 5000    % cap history length for performance
         AngleUnit (1,1) string = "radian"
     end
 
@@ -26,11 +32,11 @@ classdef StatePlotter < handle
             obj.AxU   = subplot(3,1,3, 'Parent', obj.Fig, 'Color', [1 1 1], 'XColor', [0 0 0], 'YColor', [0 0 0]);
             hold(obj.AxTh, 'on'); hold(obj.AxVel, 'on'); hold(obj.AxU, 'on');
             grid(obj.AxTh, 'on'); grid(obj.AxVel, 'on'); grid(obj.AxU, 'on');
-            plot(obj.AxTh,  NaN, NaN, 'Color', [1 0 0], 'LineWidth', 2, 'DisplayName', '\theta_1');
-            plot(obj.AxTh,  NaN, NaN, 'Color', [0 0 1], 'LineWidth', 2, 'DisplayName', '\theta_2');
-            plot(obj.AxVel, NaN, NaN, 'Color', [1 0 0], 'LineWidth', 2, 'DisplayName', '\omega_1');
-            plot(obj.AxVel, NaN, NaN, 'Color', [0 0 1], 'LineWidth', 2, 'DisplayName', '\omega_2');
-            plot(obj.AxU,   NaN, NaN, 'Color', [0 0 0], 'LineWidth', 2, 'DisplayName', 'u');
+            obj.LineTh1 = plot(obj.AxTh,  NaN, NaN, 'Color', [1 0 0], 'LineWidth', 2, 'DisplayName', '\theta_1');
+            obj.LineTh2 = plot(obj.AxTh,  NaN, NaN, 'Color', [0 0 1], 'LineWidth', 2, 'DisplayName', '\theta_2');
+            obj.LineW1  = plot(obj.AxVel, NaN, NaN, 'Color', [1 0 0], 'LineWidth', 2, 'DisplayName', '\omega_1');
+            obj.LineW2  = plot(obj.AxVel, NaN, NaN, 'Color', [0 0 1], 'LineWidth', 2, 'DisplayName', '\omega_2');
+            obj.LineU   = plot(obj.AxU,   NaN, NaN, 'Color', [0 0 0], 'LineWidth', 2, 'DisplayName', 'u');
             legend(obj.AxTh, 'Location', 'northeast');
             legend(obj.AxVel, 'Location', 'northeast');
             legend(obj.AxU, 'Location', 'northeast');
@@ -50,19 +56,41 @@ classdef StatePlotter < handle
         end
 
         function update(obj, sim)
+            if ~isvalid(obj.Fig), return; end
             t = sim.Time;
             state = sim.CurrentState;
             u = sim.Controller.computeControl(t, state);
-            obj.TData   = [obj.TData; t];
-            % Store raw angles; we unwrap for display so trajectories are continuous
-            obj.Th1Data = [obj.Th1Data; state(1)];
-            obj.Th2Data = [obj.Th2Data; state(2)];
-            obj.W1Data  = [obj.W1Data; state(3)];
-            obj.W2Data  = [obj.W2Data; state(4)];
-            obj.UData   = [obj.UData; u];
-            % theta1 = first arm from vertical; theta2 (display) = second arm from vertical = theta1 + theta2_rel (so 90°, 90° = straight)
-            th1Plot = unwrap(obj.Th1Data);
-            th2Plot = unwrap(obj.Th1Data) + unwrap(obj.Th2Data);
+
+            % Incremental unwrap: unwrap new sample relative to last stored value (O(1) per step)
+            if isempty(obj.Th1Unwrapped)
+                th1u = state(1);
+                th2u = state(2);
+            else
+                th1u = obj.Th1Unwrapped(end) + mod(state(1) - obj.Th1Unwrapped(end) + pi, 2*pi) - pi;
+                th2u = obj.Th2Unwrapped(end) + mod(state(2) - obj.Th2Unwrapped(end) + pi, 2*pi) - pi;
+            end
+
+            obj.TData        = [obj.TData; t];
+            obj.Th1Unwrapped = [obj.Th1Unwrapped; th1u];
+            obj.Th2Unwrapped = [obj.Th2Unwrapped; th2u];
+            obj.W1Data       = [obj.W1Data; state(3)];
+            obj.W2Data       = [obj.W2Data; state(4)];
+            obj.UData        = [obj.UData; u];
+
+            % Cap history length for performance
+            if numel(obj.TData) > obj.MaxPoints
+                excess = numel(obj.TData) - obj.MaxPoints;
+                obj.TData        = obj.TData(excess+1:end);
+                obj.Th1Unwrapped = obj.Th1Unwrapped(excess+1:end);
+                obj.Th2Unwrapped = obj.Th2Unwrapped(excess+1:end);
+                obj.W1Data       = obj.W1Data(excess+1:end);
+                obj.W2Data       = obj.W2Data(excess+1:end);
+                obj.UData        = obj.UData(excess+1:end);
+            end
+
+            % theta1 = first arm from vertical; theta2 (display) = second arm from vertical
+            th1Plot = obj.Th1Unwrapped;
+            th2Plot = obj.Th1Unwrapped + obj.Th2Unwrapped;
             w1Plot = obj.W1Data;
             w2Plot = obj.W2Data;
             if strcmpi(obj.AngleUnit, 'degree')
@@ -71,14 +99,11 @@ classdef StatePlotter < handle
                 w1Plot = w1Plot * 180 / pi;
                 w2Plot = w2Plot * 180 / pi;
             end
-            kidsTh = get(obj.AxTh, 'Children');
-            kidsVel = get(obj.AxVel, 'Children');
-            kidsU = get(obj.AxU, 'Children');
-            set(kidsTh(2), 'XData', obj.TData, 'YData', th1Plot);
-            set(kidsTh(1), 'XData', obj.TData, 'YData', th2Plot);
-            set(kidsVel(2), 'XData', obj.TData, 'YData', w1Plot);
-            set(kidsVel(1), 'XData', obj.TData, 'YData', w2Plot);
-            set(kidsU(1), 'XData', obj.TData, 'YData', obj.UData);
+            set(obj.LineTh1, 'XData', obj.TData, 'YData', th1Plot);
+            set(obj.LineTh2, 'XData', obj.TData, 'YData', th2Plot);
+            set(obj.LineW1, 'XData', obj.TData, 'YData', w1Plot);
+            set(obj.LineW2, 'XData', obj.TData, 'YData', w2Plot);
+            set(obj.LineU, 'XData', obj.TData, 'YData', obj.UData);
             drawnow;
         end
     end

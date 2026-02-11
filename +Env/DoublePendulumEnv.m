@@ -34,7 +34,10 @@ classdef DoublePendulumEnv < handle
                 if isfield(opts, 'R'),         obj.R          = opts.R; end
                 if isfield(opts, 'MaxSteps'),  obj.MaxSteps   = opts.MaxSteps; end
                 if isfield(opts, 'InitialState'), obj.State   = opts.InitialState(:); end
+                if isfield(opts, 'SolverType'), obj.Simulator.SolverType = string(opts.SolverType); end
             end
+            % Sync step size to internal simulator so it matches env config
+            obj.Simulator.StepSize = obj.StepSize;
         end
 
         function [state, info] = reset(obj, initial_state)
@@ -59,6 +62,10 @@ classdef DoublePendulumEnv < handle
             obj.State = obj.Simulator.CurrentState;
             obj.Time = obj.Simulator.Time;
             obj.StepCount = obj.StepCount + 1;
+
+            % Wrap angles to [-pi, pi] for consistent reward and observations
+            obj.State(1) = Utils.normalizeAngle(obj.State(1));
+            obj.State(2) = Utils.normalizeAngle(obj.State(2));
 
             next_state = obj.State;
             err = next_state - obj.GoalState;

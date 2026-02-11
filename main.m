@@ -26,7 +26,7 @@ end
 % 4. Visualization (only when config.Visual is on)
 if config.Visual
     vizManager = Vis.VisualizerManager();
-    vizManager.add(Vis.PendulumAnimator(app.AngleUnit));
+    vizManager.add(Vis.PendulumAnimator(app.AngleUnit, model.L1 + model.L2));
     vizManager.add(Vis.StatePlotter(app.AngleUnit));
     vizManager.add(Vis.PoincareMap('XVar', config.PoincareXVar, 'YVar', config.PoincareYVar, 'AngleUnit', app.AngleUnit));
 end
